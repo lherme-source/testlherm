@@ -1238,7 +1238,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void })
 }
 
 // =============== App com MENU + Login + Contas + Dashboard ===============
-
+export default function ChatPrototypeWJ() {
   // Autenticação simples (local)
   const [authUser, setAuthUser] = useState<{ name: string } | null>(null);
 
@@ -1459,7 +1459,3 @@ function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void })
     </div>
   );
 }
-
-const ChatPrototypeWJ = LoginScreen;
-
-export default ChatPrototypeWJ;
