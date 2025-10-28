@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
   BarChart3, Bold, Building2, CalendarClock, CheckCircle2, CircleDashed, Clock, Filter as FilterIcon,
   Hash, Italic, Link as LinkIcon, List, LogOut, MessagesSquare, Plus, Quote, Search, Send, Settings,
-  Shield, Smartphone, Sparkles, Trash2, Users
+  Shield, Smartphone, Sparkles, Trash2, Users, Upload, X
 } from 'lucide-react';
 
 /* =========================================================
@@ -196,7 +196,6 @@ function ProgressBar({ value }: { value: number }) {
    PÁGINAS
    ========================================================= */
 function TemplatesPage() {
-  // Editor de template seguro (sem hooks condicionais)
   const [name, setName] = useState('boas_vindas_wj');
   const [lang, setLang] = useState('pt_BR');
   const [category, setCategory] = useState<'UTILITY'|'MARKETING'|'AUTHENTICATION'>('UTILITY');
@@ -396,7 +395,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
               <label className="mb-1 block text-xs opacity-70">Contar contatos com a tag</label>
               <select value={countTag} onChange={e=>setCountTag(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-1.5 text-sm outline-none" style={{ borderColor: theme.border }}>
                 <option value="">(selecione)</option>
-                {allTags.map(t => <option key={t} value={t}>{t}</option>)}
+                {uniqueTags(contacts).map(t => <option key={t} value={t}>{t}</option>)}
               </select>
               <div className="mt-1 text-xs" style={{ color: theme.textMuted }}>Com “{countTag || '—'}”: <strong>{countTag ? countByTag : 0}</strong></div>
             </div>
@@ -415,7 +414,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
                   <button key={t} onClick={()=>setTagsFilter(prev => prev.includes(t) ? prev.filter(x=>x!==t) : [...prev, t])}
                     className={`rounded-md border px-2 py-1 text-xs ${tagsFilter.includes(t) ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
                     style={{ borderColor: theme.border }}>{t}</button>
-                )) : <div className="text-xs opacity-60">Nenhuma tag cadastrada</div>}
+                )) : <div className="text-xs opacity-60">Nenhuma tag cadastradа</div>}
               </div>
             </div>
 
@@ -804,110 +803,6 @@ function BroadcastPage({
           campaignName,
         }}
       />
-    </div>
-  );
-}
-
-function DashboardPage({
-  campaigns, filter, setFilter
-}: {
-  campaigns: Campaign[];
-  filter: CampaignStatus | 'Todos';
-  setFilter: (f: CampaignStatus | 'Todos') => void;
-}) {
-  const list = campaigns.filter(c => filter === 'Todos' ? true : c.status === filter);
-  const totals = campaigns.reduce((acc, c) => {
-    acc.total += c.total; acc.sent += c.sent; acc.delivered += c.delivered; acc.failed += c.failed; acc.replied += c.replied; return acc;
-  }, { total: 0, sent: 0, delivered: 0, failed: 0, replied: 0 });
-  const overallProgress = safeRate(totals.sent, totals.total);
-
-  function CampaignCard({ c }: { c: Campaign }) {
-    const progress = c.total > 0 ? Math.round((c.sent / c.total) * 100) : 0;
-    const rateDelivery = safeRate(c.delivered, c.total);
-    const rateError = safeRate(c.failed, c.total);
-    const rateReply = safeRate(c.replied, c.total);
-    const fmt = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' });
-
-    return (
-      <div className="rounded-lg border p-3" style={{ borderColor: theme.border, background: theme.panel }}>
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <div className="text-sm font-medium">{c.name}</div>
-            <div className="text-[11px] opacity-60">Template: {c.templateName} · Conta: {c.accountName} · Nº: {c.phoneDisplay || '—'}</div>
-          </div>
-          <StatusBadge status={c.status}/>
-        </div>
-
-        <div className="mb-2 flex items-center justify-between text-xs" style={{ color: theme.textMuted }}>
-          <div>Envio: {c.scheduledAt ? fmt.format(new Date(c.scheduledAt)) : (c.startedAt ? fmt.format(new Date(c.startedAt)) : '—')}</div>
-          <div>{c.sent}/{c.total} enviados</div>
-        </div>
-        <ProgressBar value={progress} />
-
-        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-          <div className="rounded-md border p-2 text-center" style={{ borderColor: theme.border }}>
-            <div className="opacity-60">Entrega</div>
-            <div className="text-sm font-semibold">{rateDelivery}%</div>
-          </div>
-          <div className="rounded-md border p-2 text-center" style={{ borderColor: theme.border }}>
-            <div className="opacity-60">Erro</div>
-            <div className="text-sm font-semibold">{rateError}%</div>
-          </div>
-          <div className="rounded-md border p-2 text-center" style={{ borderColor: theme.border }}>
-            <div className="opacity-60">Resposta</div>
-            <div className="text-sm font-semibold">{rateReply}%</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex h-full flex-col">
-      <div className="border-b px-4 py-3" style={{ borderColor: theme.border, background: theme.panel }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2"><BarChart3 size={16}/><div className="text-sm font-medium">Dashboard de Campanhas</div></div>
-          <div className="flex items-center gap-2 text-xs">
-            <button className={`rounded-md px-2 py-1 ${filter==='Todos' ? 'tab-active' : 'opacity-70 hover:opacity-100'} tab`} onClick={()=>setFilter('Todos')}>Todos</button>
-            <button className={`rounded-md px-2 py-1 ${filter==='Em andamento' ? 'tab-active' : 'opacity-70 hover:opacity-100'} tab`} onClick={()=>setFilter('Em andamento')}>Em andamento</button>
-            <button className={`rounded-md px-2 py-1 ${filter==='Agendada' ? 'tab-active' : 'opacity-70 hover:opacity-100'} tab`} onClick={()=>setFilter('Agendada')}>Agendadas</button>
-            <button className={`rounded-md px-2 py-1 ${filter==='Concluída' ? 'tab-active' : 'opacity-70 hover:opacity-100'} tab`} onClick={()=>setFilter('Concluída')}>Concluídas</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Resumo */}
-      <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-4">
-        <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
-          <div className="text-xs opacity-60">Total destinatários</div>
-          <div className="text-xl font-semibold">{totals.total}</div>
-        </div>
-        <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
-          <div className="text-xs opacity-60">Entregues</div>
-          <div className="text-xl font-semibold">{totals.delivered}</div>
-        </div>
-        <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
-          <div className="text-xs opacity-60">Falhas</div>
-          <div className="text-xl font-semibold">{totals.failed}</div>
-        </div>
-        <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
-          <div className="text-xs opacity-60">Respostas</div>
-          <div className="text-xl font-semibold">{totals.replied}</div>
-        </div>
-      </div>
-
-      <div className="px-4">
-        <div className="mb-2 text-xs" style={{ color: theme.textMuted }}>Progresso geral</div>
-        <ProgressBar value={overallProgress} />
-      </div>
-
-      <div className="scroll-slim grid flex-1 grid-cols-1 gap-4 p-4 md:grid-cols-2 xl:grid-cols-3">
-        {list.length ? list.map(c => <CampaignCard key={c.id} c={c} />) : (
-          <div className="col-span-full rounded-lg border p-6 text-center text-sm" style={{ borderColor: theme.border, color: theme.textMuted }}>
-            Nenhuma campanha para esse filtro.
-          </div>
-        )}
-      </div>
     </div>
   );
 }
