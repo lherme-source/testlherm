@@ -636,7 +636,7 @@ function AccountsPage({
             <select value={selectedAccountId} onChange={(e)=>{ setSelectedAccountId(e.target.value); setSelectedPhoneId(''); }} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} — {acc.wabaId}</option>)}
             </select>
-            <p className="text-[11px] opacity-60">No real: listar via Graph API <em>/{{WABA_ID}}/phone_numbers</em> com permissões adequadas.</p>
+            <p className="text-[11px] opacity-60"> No real: listar via Graph API <code>/&#123;WABA_ID&#125;/phone_numbers</code> com permissões adequadas.</p>
           </div>
         </div>
 
