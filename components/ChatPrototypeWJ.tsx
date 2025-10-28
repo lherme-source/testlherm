@@ -1459,3 +1459,9 @@ export default function ChatPrototypeWJ() {
     </div>
   );
 }
+
+
+// =============== TemplatesPage (stub override) ===============
+function TemplatesPage(){
+  return (<div className="p-6 text-sm opacity-80">TemplatesPage temporariamente simplificado para concluir o deploy.</div>);
+}
