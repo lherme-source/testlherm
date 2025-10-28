@@ -511,56 +511,84 @@ function NewContactPanel({ onClose, onSave }: { onClose: () => void; onSave: (c:
 }
 
 // =============== Painel: Templates (página dedicada) ===============
-// =============== TemplatesPage ===============
-function TemplatesPage(){
-  const [q, setQ] = useState('');
-  const items = [
-    { name: 'boas_vindas_wj', category: 'MARKETING', status: 'APPROVADO', language: 'pt_BR' },
-    { name: 'aviso_pedidos_2026', category: 'UTILITY', status: 'APROVADO', language: 'pt_BR' },
-    { name: 'cobranca_atraso', category: 'UTILITY', status: 'REPROVADO', language: 'pt_BR' },
-  ];
-  const filtered = items.filter(i => i.name.toLowerCase().includes(q.toLowerCase()));
+function TemplatesPage() {
+  const [name, setName] = useState("boas_vindas_wj");
+  const [lang, setLang] = useState("pt_BR");
+  const [category, setCategory] = useState("UTILITY");
+  const [header, setHeader] = useState<string>("");
+  const [body, setBody] = useState<string>("Olá {{1}}, obrigado pelo interesse nas Luminárias WJ. Podemos ajudar com medidas, prazos e acabamentos. Digite seu assunto ou responda 1-Catálogo 2-Prazos 3-Atendimento.");
+  const [footer, setFooter] = useState<string>("WJ · Feito à mão no Brasil");
+
+  const wrapSel = (fieldSetter: (v: string)=>void, value: string, left: string, right: string) => fieldSetter(left + value + right);
+
+  const validate = () => {
+    const errors: string[] = [];
+    if (!name.trim()) errors.push("Nome interno obrigatório");
+    if (!/^[a-z0-9_\-]+$/i.test(name)) errors.push("Nome interno: use letras, números, hífen ou underline");
+    if (!body.includes("{{1}}")) errors.push("Inclua pelo menos {{1}} no corpo para personalização");
+    if (!["UTILITY","MARKETING","AUTHENTICATION"].includes(category)) errors.push("Categoria inválida");
+    return errors;
+  };
+
+  const errors = validate();
 
   return (
     <div className="flex h-full flex-col">
-      <div
-        className="border-b px-4 py-3"
-        style={{ borderColor: theme.border, background: theme.panel }}
-      >
-        <div className="flex items-center gap-2">
-          <Sparkles size={16}/>
-          <div className="text-sm font-medium">Templates (Mock)</div>
-        </div>
+      <div className="border-b px-4 py-3" style={{ borderColor: theme.border, background: theme.panel }}>
+        <div className="flex items-center gap-2"><Sparkles size={16}/><div className="text-sm font-medium">Templates para aprovação (Meta)</div></div>
       </div>
-
-      <div className="p-4">
-        <input
-          className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none"
-          style={{ borderColor: theme.border }}
-          placeholder="Buscar template"
-          value={q}
-          onChange={(e)=>setQ(e.target.value)}
-        />
-
-        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
-          {filtered.map(t => (
-            <div
-              key={t.name}
-              className="rounded-lg border p-3"
-              style={{ borderColor: theme.border, background: theme.panel }}
-            >
-              <div className="text-sm font-medium">{t.name}</div>
-              <div className="text-xs opacity-70">
-                {t.category} · {t.status} · {t.language}
+      <div className="scroll-slim grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-2">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="mb-1 block text-xs opacity-70">Nome interno</label><input value={name} onChange={(e)=>setName(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} /></div>
+            <div><label className="mb-1 block text-xs opacity-70">Idioma</label><select value={lang} onChange={(e)=>setLang(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}><option value="pt_BR">pt_BR</option><option value="en_US">en_US</option><option value="es_ES">es_ES</option></select></div>
+            <div><label className="mb-1 block text-xs opacity-70">Categoria</label><select value={category} onChange={(e)=>setCategory(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}><option value="UTILITY">UTILITY</option><option value="MARKETING">MARKETING</option><option value="AUTHENTICATION">AUTHENTICATION</option></select></div>
+            <div className="flex items-end"><div className="text-[11px] opacity-60">{'Use variáveis {{1}}, {{2}} ...'}</div></div>
+          </div>
+          <div><label className="mb-1 block text-xs opacity-70">Header (opcional)</label><input value={header} onChange={(e)=>setHeader(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} placeholder="Ex.: WJ — Boas-vindas" /></div>
+          <div>
+            <div className="mb-1 flex items-center justify-between"><label className="block text-xs opacity-70">Body</label>
+              <div className="flex items-center gap-1">
+                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>wrapSel(setBody, body, "*", "*")}>
+                  <Bold size={14}/>
+                </button>
+                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>wrapSel(setBody, body, "_", "_")}>
+                  <Italic size={14}/>
+                </button>
+                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>appendSnippet(prev, "> citação"))}>
+                  <Quote size={14}/>
+                </button>
+                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>appendSnippet(prev, "• item"))}>
+                  <List size={14}/>
+                </button>
+                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>appendSnippet(prev, "{{1}}"))}>
+                  <Hash size={14}/>
+                </button>
+                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>prev + " https://wj.link ")}>
+                  <Link size={14}/>
+                </button>
               </div>
             </div>
-          ))}
+            <textarea value={body} onChange={(e)=>setBody(e.target.value)} rows={8} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm leading-relaxed outline-none" style={{ borderColor: theme.border }} />
+          </div>
+          <div><label className="mb-1 block text-xs opacity-70">Footer (opcional)</label><input value={footer} onChange={(e)=>setFooter(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} /></div>
+          <div className="flex items-center justify-between">
+            <div className="text-xs" style={{ color: errors.length ? theme.danger : theme.textMuted }}>{errors.length ? `Erros: ${errors.join(' | ')}` : 'Pronto para enviar (simulado)'}</div>
+            <button disabled={!!errors.length} className="rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-60" style={{ background: theme.accent, color: '#111' }}>Enviar para aprovação (simulado)</button>
+          </div>
+        </div>
+        <div className="space-y-3 rounded-lg border p-3" style={{ borderColor: theme.border }}>
+          <div className="border-b pb-2 text-xs uppercase tracking-wider" style={{ borderColor: theme.border, color: theme.textMuted }}>Pré-visualização</div>
+          <div className="space-y-2 text-sm">
+            {header && <div className="opacity-80">{header}</div>}
+            <div>{body}</div>
+            {footer && <div className="text-xs opacity-60">{footer}</div>}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
 
 // =============== Painel: Contatos (página dedicada) ===============
 function ContactsPage({ contacts, onAddMany, onDeleteMany, onBulkTagAdd, onBulkTagRemove }: { contacts: Contact[]; onAddMany: (c: Contact[]) => void; onDeleteMany: (ids: string[]) => void; onBulkTagAdd: (tag: string, ids: string[]) => void; onBulkTagRemove: (tag: string, ids: string[]) => void }) {
@@ -783,7 +811,7 @@ function AccountsPage({ accounts, selectedAccountId, setSelectedAccountId, selec
             <select value={selectedAccountId} onChange={(e)=>{ setSelectedAccountId(e.target.value); setSelectedPhoneId(''); }} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} — {acc.wabaId}</option>)}
             </select>
-            <p className="text-[11px] opacity-60">No real: listar via Graph API <em>/{'{{WABA_ID}}'}/phone_numbers</em> com permissões adequadas.</p>
+            <p className="text-[11px] opacity-60">No real: listar via Graph API <em>/{{WABA_ID}}/phone_numbers</em> com permissões adequadas.</p>
           </div>
         </div>
         <div className="space-y-3 rounded-lg border p-3" style={{ borderColor: theme.border }}>
@@ -813,8 +841,8 @@ function AccountsPage({ accounts, selectedAccountId, setSelectedAccountId, selec
 function BroadcastPage({ contacts, selectedAccount, selectedPhone, onCreateCampaign }: { contacts: Contact[]; selectedAccount?: MetaAccount; selectedPhone?: MetaPhone; onCreateCampaign: (c: { name: string; templateName: string; total: number; scheduleAt?: string }) => void }) {
   // Lista simulada de templates aprovados (no real viria da Meta)
   const approvedTemplates = useMemo(() => [
-    { id: 'tpl_boasvindas', name: 'boas_vindas_wj', header: 'Luminárias WJ', body: 'Olá {'{{1}}'}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?', footer: 'Feito à mão no Brasil' },
-    { id: 'tpl_aviso2026', name: 'aviso_pedidos_2026', header: 'Agenda 2026', body: 'Olá {'{{1}}'}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?', footer: 'Equipe WJ' },
+    { id: 'tpl_boasvindas', name: 'boas_vindas_wj', header: 'Luminárias WJ', body: 'Olá {{1}}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?', footer: 'Feito à mão no Brasil' },
+    { id: 'tpl_aviso2026', name: 'aviso_pedidos_2026', header: 'Agenda 2026', body: 'Olá {{1}}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?', footer: 'Equipe WJ' },
   ], []);
 
   const [selectedTplId, setSelectedTplId] = useState<string>("");
