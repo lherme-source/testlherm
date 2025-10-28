@@ -1,32 +1,29 @@
+
 <!doctype html>
 <html lang="pt-br">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>WJ — Protótipo WhatsApp UI</title>
-
-  <!-- Tailwind via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React 18 via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-
-  <!-- Babel (para entender JSX no navegador, ótimo para protótipo sem build) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <style>
     :root { color-scheme: dark; }
     html, body, #root { height: 100%; }
     body { margin:0; background:#0b0b0b; }
+    @font-face {
+      font-family: "PP Neue Montreal";
+      src: url("./PPNEUEMONTREAL-VARIABLE.TTF") format("truetype");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
-  <!-- Cole o seu componente JSX no lugar indicado abaixo.
-       Se você quiser, pode substituir TODO o conteúdo do componente abaixo
-       pelo seu código. Só garanta que exista um símbolo chamado ChatPrototypeWJ. -->
   <script type="text/babel">
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1267,7 +1264,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void })
 }
 
 // =============== App com MENU + Login + Contas + Dashboard ===============
-export default function ChatPrototypeWJ() {
+function ChatPrototypeWJ() {
   // Autenticação simples (local)
   const [authUser, setAuthUser] = useState<{ name: string } | null>(null);
 
@@ -1488,6 +1485,9 @@ export default function ChatPrototypeWJ() {
     </div>
   );
 }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ChatPrototypeWJ />);
   </script>
 </body>
 </html>
