@@ -516,7 +516,7 @@ function TemplatesPage() {
   const [lang, setLang] = useState("pt_BR");
   const [category, setCategory] = useState("UTILITY");
   const [header, setHeader] = useState<string>("");
-  const [body, setBody] = useState<string>("Olá {{1}}, obrigado pelo interesse nas Luminárias WJ. Podemos ajudar com medidas, prazos e acabamentos. Digite seu assunto ou responda 1-Catálogo 2-Prazos 3-Atendimento.");
+  const [body, setBody] = useState<string>("Olá {'{{1}}'}, obrigado pelo interesse nas Luminárias WJ. Podemos ajudar com medidas, prazos e acabamentos. Digite seu assunto ou responda 1-Catálogo 2-Prazos 3-Atendimento.");
   const [footer, setFooter] = useState<string>("WJ · Feito à mão no Brasil");
 
   const wrapSel = (fieldSetter: (v: string)=>void, value: string, left: string, right: string) => fieldSetter(left + value + right);
@@ -525,7 +525,7 @@ function TemplatesPage() {
     const errors: string[] = [];
     if (!name.trim()) errors.push("Nome interno obrigatório");
     if (!/^[a-z0-9_\-]+$/i.test(name)) errors.push("Nome interno: use letras, números, hífen ou underline");
-    if (!body.includes("{{1}}")) errors.push("Inclua pelo menos {{1}} no corpo para personalização");
+    if (!body.includes("{'{{1}}'}")) errors.push("Inclua pelo menos {'{{1}}'} no corpo para personalização");
     if (!["UTILITY","MARKETING","AUTHENTICATION"].includes(category)) errors.push("Categoria inválida");
     return errors;
   };
@@ -543,7 +543,7 @@ function TemplatesPage() {
             <div><label className="mb-1 block text-xs opacity-70">Nome interno</label><input value={name} onChange={(e)=>setName(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} /></div>
             <div><label className="mb-1 block text-xs opacity-70">Idioma</label><select value={lang} onChange={(e)=>setLang(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}><option value="pt_BR">pt_BR</option><option value="en_US">en_US</option><option value="es_ES">es_ES</option></select></div>
             <div><label className="mb-1 block text-xs opacity-70">Categoria</label><select value={category} onChange={(e)=>setCategory(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}><option value="UTILITY">UTILITY</option><option value="MARKETING">MARKETING</option><option value="AUTHENTICATION">AUTHENTICATION</option></select></div>
-            <div className="flex items-end"><div className="text-[11px] opacity-60">{'Use variáveis {{1}}, {{2}} ...'}</div></div>
+            <div className="flex items-end"><div className="text-[11px] opacity-60">{'Use variáveis {'{{1}}'}, {'{{2}}'} ...'}</div></div>
           </div>
           <div><label className="mb-1 block text-xs opacity-70">Header (opcional)</label><input value={header} onChange={(e)=>setHeader(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} placeholder="Ex.: WJ — Boas-vindas" /></div>
           <div>
@@ -561,7 +561,7 @@ function TemplatesPage() {
                 <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>appendSnippet(prev, "• item"))}>
                   <List size={14}/>
                 </button>
-                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>appendSnippet(prev, "{{1}}"))}>
+                <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>appendSnippet(prev, "{'{{1}}'}"))}>
                   <Hash size={14}/>
                 </button>
                 <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={()=>setBody((prev)=>prev + " https://wj.link ")}>
@@ -811,7 +811,7 @@ function AccountsPage({ accounts, selectedAccountId, setSelectedAccountId, selec
             <select value={selectedAccountId} onChange={(e)=>{ setSelectedAccountId(e.target.value); setSelectedPhoneId(''); }} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} — {acc.wabaId}</option>)}
             </select>
-            <p className="text-[11px] opacity-60">No real: listar via Graph API <em>/{{WABA_ID}}/phone_numbers</em> com permissões adequadas.</p>
+            <p className="text-[11px] opacity-60">No real: listar via Graph API <em>/{'{{WABA_ID}}'}/phone_numbers</em> com permissões adequadas.</p>
           </div>
         </div>
         <div className="space-y-3 rounded-lg border p-3" style={{ borderColor: theme.border }}>
@@ -841,8 +841,8 @@ function AccountsPage({ accounts, selectedAccountId, setSelectedAccountId, selec
 function BroadcastPage({ contacts, selectedAccount, selectedPhone, onCreateCampaign }: { contacts: Contact[]; selectedAccount?: MetaAccount; selectedPhone?: MetaPhone; onCreateCampaign: (c: { name: string; templateName: string; total: number; scheduleAt?: string }) => void }) {
   // Lista simulada de templates aprovados (no real viria da Meta)
   const approvedTemplates = useMemo(() => [
-    { id: 'tpl_boasvindas', name: 'boas_vindas_wj', header: 'Luminárias WJ', body: 'Olá {{1}}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?', footer: 'Feito à mão no Brasil' },
-    { id: 'tpl_aviso2026', name: 'aviso_pedidos_2026', header: 'Agenda 2026', body: 'Olá {{1}}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?', footer: 'Equipe WJ' },
+    { id: 'tpl_boasvindas', name: 'boas_vindas_wj', header: 'Luminárias WJ', body: 'Olá {'{{1}}'}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?', footer: 'Feito à mão no Brasil' },
+    { id: 'tpl_aviso2026', name: 'aviso_pedidos_2026', header: 'Agenda 2026', body: 'Olá {'{{1}}'}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?', footer: 'Equipe WJ' },
   ], []);
 
   const [selectedTplId, setSelectedTplId] = useState<string>("");
