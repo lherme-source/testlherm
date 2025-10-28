@@ -17,16 +17,17 @@ import {
    TEMA E FONTES
 ============================================================ */
 const theme = {
-  bg: '#0b0b0c',
-  panel: '#121214',
-  panel2: '#151518',
-  border: '#2a2a2f',
-  text: '#f5f5f6',
-  textMuted: '#b4b4bb',
-  accent: '#b6ff66',
-  success: '#52ffa5',
-  warn: '#e2c94c',
-  danger: '#ff6b6b',
+  bg: '#0b0b0b',
+  panel: '#121212',
+  panel2: '#161616',
+  border: '#2a2a2a',
+  text: '#f5f5f5',
+  textMuted: '#9b9b9b',
+  // ↓↓↓ troque aqui
+  accent: '#F5C241',        // âmbar principal
+  success: '#34d399',
+  danger: '#ef4444',
+  warn: '#F5C241',          // use o mesmo âmbar para alertas
 } as const;
 
 function FontGlobal() {
@@ -39,12 +40,17 @@ function FontGlobal() {
         font-style: normal;
         font-display: swap;
       }
-      :root{ color-scheme: dark; }
-      html,body{ margin:0; padding:0; background:${theme.bg}; color:${theme.text}; font-family:"PP Neue Montreal", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-      .tab{ border-bottom:2px solid transparent; }
-      .tab-active{ border-bottom-color:${theme.accent}; color:${theme.text}; }
-      .btn-ghost{ background:transparent; border:1px solid ${theme.border}; }
-      .scroll-slim{ scrollbar-width: thin; }
+        :root { --accent: ${theme.accent}; }
+        .tab { border-bottom: 2px solid transparent; }
+        .tab-active { border-bottom-color: var(--accent); color: #fff; }
+        .btn-ghost:hover { background: #F5C2411a; }
+        /* inputs/bordas em foco com âmbar bem sutil */
+        input:focus, textarea:focus, select:focus {
+          border-color: var(--accent) !important;
+          box-shadow: 0 0 0 3px rgba(245, 194, 65, 0.15);
+        }
+        /* badges/dots que usam o destaque */
+        .dot-accent { background: var(--accent); }
     `}</style>
   );
 }
