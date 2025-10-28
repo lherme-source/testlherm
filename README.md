@@ -1,18 +1,36 @@
-# WJ WhatsApp Cloud — Ajustes de UI (âmbar #d6a65c) e Conversas
+# WJ Chat Prototype (Amber)
 
-Este pacote contém **apenas os arquivos alterados** para aplicar no seu projeto Next.js.
+Reversão para a versão estável com **acento amarelo (amber)** na lista de conversas e badges.
+Inclui placeholders para integração com **WhatsApp Business API (WABA)**.
 
-## O que mudou
-- Tema em **âmbar** atualizado para `#d6a65c` (rgb(214, 166, 92)).
-- Correção do texto literal `/{WABA_ID}/phone_numbers` (sem JSX).
-- Ordenação e visual da lista de **Conversas** como no print.
-- Badges (pino, não lidas) e tabs com o mesmo âmbar.
-- Removidos resquícios de tons esverdeados.
+## Rodar local
+```bash
+npm i
+npm run dev
+```
 
-## Como aplicar
-1. Copie `components/ChatPrototypeWJ.tsx` para o mesmo caminho no seu repositório.
-2. `git add . && git commit -m "style(ui): amber #d6a65c + conversas"`
-3. `npm run build` e depois `npm run dev` para validar localmente.
-4. Faça o push para o Git (Vercel fará o deploy).
+## Build
+```bash
+npm run build
+npm start
+```
 
-Se algo divergir do seu setup local (ex.: path, fontes), me avise que eu gero um patch sob medida.
+## Variáveis (.env.local)
+```
+WABA_ACCESS_TOKEN=seu_token
+WABA_BUSINESS_ID=123456789
+WABA_PHONE_ID=1234567890
+```
+
+## Estrutura
+- `components/ChatPrototypeWJ.tsx` — UI principal. Sem dependências externas, apenas Tailwind.
+- `app/api/messages/route.ts` — endpoint placeholder para envio. Substituir por chamada real da Graph API.
+- `app/page.tsx` — renderiza o componente.
+- `styles/globals.css` — estilos base + utilitários Tailwind.
+- `tailwind.config.ts` e `postcss.config.js` — config de build CSS.
+
+## Observações
+- Todo o **verde** foi substituído por **amber** (amarelo).
+- A lista de conversas foi mantida em ordem decrescente por data, com `badge` de **não lidas** em **amber**.
+- Sem erros de JSX; componente marcado como `'use client'` e tipado.
+```
