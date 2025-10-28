@@ -1,9 +1,8 @@
-import './styles.css'
 import '../styles/globals.css'
 
 export const metadata = {
   title: 'WJ — Protótipo WhatsApp UI',
-  description: 'Protótipo estático com Next.js + Tailwind',
+  description: 'Protótipo com Next.js + Tailwind + rotas /api',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }){
