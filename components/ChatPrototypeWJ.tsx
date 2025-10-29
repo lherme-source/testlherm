@@ -1,10 +1,11 @@
+"use client";
 // components/ChatPrototypeWJ.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-import ConversationsPanel from './ConversationsPanel';
+
   // UI / status
   BarChart3, CalendarClock, CheckCircle2, CircleDashed, Clock, Filter as FilterIcon,
   MessagesSquare, Send, Settings, Shield, X, LogOut, Building2, Smartphone, Plus,
