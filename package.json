@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "next": "14.2.5",
@@ -24,5 +25,8 @@
     "@types/node": "^20.11.30",
     "eslint": "^9.12.0",
     "@types/react-dom": "^18.2.19"
+  },
+  "engines": {
+    "node": ">=18.17.0"
   }
 }
