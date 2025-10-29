@@ -631,6 +631,7 @@ function ConfirmModal({
 /* ============================================================
    PÁGINAS: ACCOUNTS / BROADCAST / DASHBOARD
 ============================================================ */
+import ChatPanel from "./ChatPanel";
 function AccountsPage({
   accounts, selectedAccountId, setSelectedAccountId, selectedPhoneId, setSelectedPhoneId
 }:{
@@ -1198,6 +1199,20 @@ export function ChatPrototypeWJ() {
           </button>
           <button className={`tab pb-3 ${activeTab==='chat' ? 'tab-active' : 'opacity-70 hover:opacity-100'}`} onClick={()=>setActiveTab('chat')}>
             <div className="flex items-center gap-1"><MessagesSquare size={16}/> Conversas</div>
+            {activeTab === "chat" && (
+  <ChatPanel
+    contacts={contacts}                    // opcional: usa mocks se não passar
+    threads={MOCK_THREADS}                 // opcional: usa mocks se não passar
+    selectedId={selected}                  // opcional
+    onChangeSelected={setSelected}         // opcional
+    onSendMessage={(contactId, text) => {
+      // aqui você integra com sua lógica (ex.: enviar via API)
+      console.log("Enviar:", contactId, text);
+    }}
+    onOpenTemplates={() => setActiveTab("templates")}
+    style={{ height: "calc(100vh - 48px)" }} // ajuste se precisar
+  />
+)}
           </button>
           <button className={`tab pb-3 ${activeTab==='contacts' ? 'tab-active' : 'opacity-70 hover:opacity-100'}`} onClick={()=>setActiveTab('contacts')}>
             <div className="flex items-center gap-1"><Users size={16}/> Contatos</div>
