@@ -1,70 +1,59 @@
-// components/ChatPrototypeWJ.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  // UI / status
   BarChart3, CalendarClock, CheckCircle2, CircleDashed, Clock, Filter as FilterIcon,
   MessagesSquare, Send, Settings, Shield, X, LogOut, Building2, Smartphone, Plus,
-  // Edição/inputs
   Bold, Italic, Quote, List, Hash, Upload, Search, Trash2, Sparkles, Users,
-  // evitar conflito com next/link
   Link as Link2,
 } from 'lucide-react';
 
 /* ============================================================
    TEMA E FONTES
 ============================================================ */
- const theme = {
-   bg: '#0b0b0b',
-   panel: '#121212',
-   panel2: '#161616',
-   border: '#2a2a2a',
-   text: '#f5f5f5',
-   textMuted: '#9b9b9b',
--  // ↓↓↓ troque aqui
--  accent: '#F5C241',        // âmbar principal
-+  // ↓↓↓ cor âmbar padronizada WJ
-+  accent: '#d6a65c',        // rgb(214, 166, 92)
-   success: '#34d399',
-   danger: '#ef4444',
--  warn: '#F5C241',          // use o mesmo âmbar para alertas
-+  warn: '#d6a65c',          // usa o mesmo âmbar para alertas
- } as const;
- 
- function FontGlobal() {
-   return (
-     <style jsx global>{`
-@@
-       @font-face{
-         font-family:"PP Neue Montreal";
-         src: url("/assets/PPNEUEMONTREAL-VARIABLE.TTF") format("truetype-variations");
-         font-weight: 100 900;
-         font-style: normal;
-         font-display: swap;
-       }
--        :root { --accent: ${theme.accent}; }
-+        :root { --accent: ${theme.accent}; }
-         .tab { border-bottom: 2px solid transparent; }
-         .tab-active { border-bottom-color: var(--accent); color: #fff; }
-         .btn-ghost:hover { background: #F5C2411a; }
-         /* inputs/bordas em foco com âmbar bem sutil */
-         input:focus, textarea:focus, select:focus {
-           border-color: var(--accent) !important;
-           box-shadow: 0 0 0 3px rgba(245, 194, 65, 0.15);
-         }
-         /* badges/dots que usam o destaque */
-         .dot-accent { background: var(--accent); }
-     `}</style>
-   );
- }
+const theme = {
+  bg: '#0b0b0b',
+  panel: '#121212',
+  panel2: '#161616',
+  border: '#2a2a2a',
+  text: '#f5f5f5',
+  textMuted: '#9b9b9b',
+  // âmbar padronizado WJ
+  accent: '#d6a65c',   // rgb(214, 166, 92)
+  success: '#34d399',
+  danger: '#ef4444',
+  warn: '#d6a65c',     // usa o mesmo âmbar para avisos
+} as const;
+
+function FontGlobal() {
+  return (
+    <style jsx global>{`
+      @font-face{
+        font-family:"PP Neue Montreal";
+        src: url("/assets/PPNEUEMONTREAL-VARIABLE.TTF") format("truetype-variations");
+        font-weight: 100 900;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root { --accent: ${theme.accent}; }
+      .tab { border-bottom: 2px solid transparent; }
+      .tab-active { border-bottom-color: var(--accent); color: #fff; }
+      .btn-ghost:hover { background: rgba(214, 166, 92, 0.1); }
+      input:focus, textarea:focus, select:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 3px rgba(214, 166, 92, 0.15);
+      }
+      .dot-accent { background: var(--accent); }
+    `}</style>
+  );
+}
 
 function WJBadge(){
   return (
     <div className="flex items-center gap-2">
       <div className="grid h-7 w-7 place-items-center rounded-full" style={{ background: theme.accent, color: '#111' }}>WJ</div>
-      <div className="text-sm font-semibold tracking-wide">Painel Whatsapp</div>
+      <div className="text-sm font-semibold tracking-wide">Painel WJ</div>
     </div>
   );
 }
@@ -78,14 +67,6 @@ type Contact = {
   phone: string; // E.164 preferencial
   email?: string;
   tags?: string[];
-
-  // novos campos p/ visual de conversas (imagem 1)
-  initials?: string;
-  subtitle?: string;     // ex.: "cliente", "showroom", "fixado"
-  lastMessage?: string;  // preview da última mensagem
-  unread?: number;       // contador de não lidas
-  pinned?: boolean;      // fixado
-  online?: boolean;      // status online (pontinho verde)
 };
 
 type CampaignStatus = 'Agendada' | 'Em andamento' | 'Concluída';
@@ -113,56 +94,9 @@ type MetaAccount = { id: string; name: string; wabaId: string; phones: MetaPhone
    MOCKS
 ============================================================ */
 const MOCK_CONTACTS: Contact[] = [
-  {
-    id: 'c1',
-    name: 'Estúdio Baviera',
-    phone: '+5511999990000',
-    email: 'contato@baviera.com',
-    initials: 'EB',
-    tags: ['showroom','vip'],
-    subtitle: 'fixado',
-    lastMessage: 'Amei o acabamento em inox polido. Enviam catálogo?',
-    unread: 2,
-    pinned: true,
-    online: true,
-  },
-  {
-    id: 'c2',
-    name: 'Galeria São Paulo',
-    phone: '+5511987654000',
-    initials: 'GSP',
-    tags: ['cliente'],
-    lastMessage: 'Pedido #427 confirmado. Prazos para janeiro?',
-    unread: 0,
-  },
-  {
-    id: 'c3',
-    name: 'Delumini Showroom',
-    phone: '+5511987654321',
-    initials: 'DL',
-    tags: ['showroom'],
-    lastMessage: 'Consegue vídeo do pendente ORI?',
-    unread: 1,
-    online: true,
-  },
-  {
-    id: 'c4',
-    name: 'Mariana — Arq.',
-    phone: '+55219988887777',
-    initials: 'MA',
-    lastMessage: 'Projeto Cobogó: fita âmbar ou 3000K?',
-    unread: 0,
-  },
-  {
-    id: 'c5',
-    name: 'Rodrigo de Borba',
-    phone: '+5551998887777',
-    initials: 'RB',
-    subtitle: 'fixado',
-    lastMessage: 'Fechei colab 1 Reels. Envio roteiro?',
-    unread: 0,
-    pinned: true,
-  },
+  { id: 'c1', name: 'Maria Silva', phone: '+5511999990000', email: 'maria@exemplo.com', tags: ['loja','vip'] },
+  { id: 'c2', name: 'João Souza',  phone: '+55219988887777', email: 'joao@exemplo.com',  tags: ['revenda'] },
+  { id: 'c3', name: 'Estúdio Luz',  phone: '+5511987654321', tags: ['estudio'] },
 ];
 
 const MOCK_ACCOUNTS: MetaAccount[] = [
@@ -191,19 +125,17 @@ const MOCK_ACCOUNTS: MetaAccount[] = [
 function uid(prefix='id'){ return `${prefix}_${Math.random().toString(36).slice(2,9)}`; }
 
 function normalizeBRPhoneToE164(raw: string){
-  // remove não-dígitos
   const digits = raw.replace(/\D+/g,'');
-  if (digits.startsWith('55')) return `+${digits}`;
-  return `+55${digits}`;
+  return digits.startsWith('55') ? `+${digits}` : `+55${digits}`;
 }
 
 function parseCsvContacts(csv: string): Contact[] {
-  // form esperado: name,e-mail,phone,tags
+  // esperado: name,e-mail,phone,tags
   const lines = csv.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   if (!lines.length) return [];
   const out: Contact[] = [];
-  for (let i=0;i<lines.length;i++){
-    const row = lines[i].split(',').map(x=>x.trim());
+  for (const line of lines){
+    const row = line.split(',').map(x=>x.trim());
     if (row.length < 3) continue;
     const [name, email, phone, tagsRaw] = row;
     const tags = (tagsRaw||'').split(/[;,]/).map(t=>t.trim()).filter(Boolean);
@@ -241,7 +173,7 @@ function appendSnippet(prev: string, snippet: string){
 }
 
 /* ============================================================
-   COMPONENTES BÁSICOS DO CHAT
+   COMPONENTES BÁSICOS
 ============================================================ */
 function Sidebar({ contacts, selected, onSelect, onOpenNew }:{
   contacts: Contact[];
@@ -249,82 +181,25 @@ function Sidebar({ contacts, selected, onSelect, onOpenNew }:{
   onSelect: (id: string)=>void;
   onOpenNew: ()=>void;
 }){
-  const ordered = [...contacts].sort((a,b)=>
-    (b.pinned?1:0) - (a.pinned?1:0) || (b.unread||0) - (a.unread||0)
-  );
-
   return (
-    <aside className="hidden w-[360px] shrink-0 border-r lg:block" style={{ borderColor: theme.border, background: theme.panel }}>
-      {/* Topo */}
+    <aside className="hidden w-[320px] shrink-0 border-r lg:block" style={{ borderColor: theme.border, background: theme.panel }}>
       <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border }}>
-        <div>
-          <div className="text-[11px] uppercase tracking-[0.22em]" style={{ color: theme.textMuted }}>Luminárias WJ</div>
-          <div className="text-[11px] opacity-60">WHATSAPP CLOUD · PROTÓTIPO</div>
-        </div>
+        <div className="text-xs uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Contatos</div>
         <button className="btn-ghost rounded-md px-2 py-1 text-xs" onClick={onOpenNew}>
           <div className="flex items-center gap-1"><Plus size={14}/> Novo</div>
         </button>
       </div>
-
-      {/* Busca */}
-      <div className="p-3">
-        <div className="flex items-center gap-2 rounded-md border px-2 py-2" style={{ borderColor: theme.border, background: theme.panel2 }}>
-          <Search size={14} className="opacity-70" />
-          <input placeholder="Buscar contato ou telefone" className="w-full bg-transparent text-sm outline-none placeholder:opacity-50" />
-        </div>
-      </div>
-
-      {/* Lista */}
-      <div className="scroll-slim max-h-[calc(100vh-48px-40px-64px)] overflow-auto divide-y" style={{ borderColor: theme.border }}>
-        {ordered.map(c=>{
-          const initials = c.initials || c.name.split(' ').map(p=>p[0]).join('').slice(0,3).toUpperCase();
-          const isActive = selected===c.id;
-          return (
-            <button
-              key={c.id}
-              onClick={()=>onSelect(c.id)}
-              className={`block w-full px-3 py-2 text-left transition-colors ${isActive?'bg-white/5':'hover:bg-white/3'}`}
-            >
-              <div className="flex items-start gap-3">
-                {/* Avatar */}
-                <div className="relative">
-                  <div className="grid h-8 w-8 place-items-center rounded-full text-[11px] font-semibold"
-                       style={{ background: '#1f1f1f', border: `1px solid ${theme.border}` }}>
-                    {initials}
-                  </div>
-                  {c.online && <span className="absolute -right-1 -bottom-1 h-2.5 w-2.5 rounded-full" style={{ background: '#34d399', border: '2px solid #121212' }}/>}
-                </div>
-
-                {/* Conteúdo */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="truncate text-sm">{c.name}</div>
-                    {c.pinned ? (
-                      <span className="rounded-full border px-1.5 py-[1px] text-[10px]" style={{ borderColor: theme.border, color: theme.textMuted }}>fixado</span>
-                    ) : c.subtitle ? (
-                      <span className="rounded-full border px-1.5 py-[1px] text-[10px]" style={{ borderColor: theme.border, color: theme.textMuted }}>{c.subtitle}</span>
-                    ) : null}
-                  </div>
-                  {c.lastMessage && <div className="truncate text-xs opacity-70">{c.lastMessage}</div>}
-                  {!!(c.tags && c.tags.length) && (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {c.tags!.map(t=>(
-                        <span key={t} className="rounded-md px-1.5 py-[2px] text-[10px]" style={{ background: "#ffffff0f", border: `1px solid ${theme.border}` }}>{t}</span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Unread */}
-                {c.unread && c.unread>0 && (
-                  <div className="ml-2 grid h-5 min-w-[20px] place-items-center rounded-full px-1.5 text-[11px] font-semibold" style={{ background: theme.accent, color: '#111' }}>
-                    {c.unread}
-                  </div>
-                )}
-              </div>
-            </button>
-          );
-        })}
+      <div className="scroll-slim max-h-[calc(100vh-48px-40px)] overflow-auto divide-y" style={{ borderColor: theme.border }}>
+        {contacts.map(c=>(
+          <button
+            key={c.id}
+            onClick={()=>onSelect(c.id)}
+            className={`block w-full px-3 py-2 text-left ${selected===c.id?'bg-white/5':''}`}
+          >
+            <div className="text-sm">{c.name}</div>
+            <div className="text-xs opacity-60">{c.phone}{c.email? ` · ${c.email}`:''}</div>
+          </button>
+        ))}
       </div>
     </aside>
   );
@@ -344,12 +219,8 @@ function ChatWindow({ contact, onOpenTemplates }:{ contact: Contact; onOpenTempl
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      {/* Header ajustado: nome + online agora + botão Templates */}
       <div className="flex items-center justify-between border-b px-4 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
-        <div>
-          <div className="text-sm font-medium">{contact.name}</div>
-          {contact.online && <div className="text-[11px]" style={{ color: theme.textMuted }}>online agora</div>}
-        </div>
+        <div className="text-sm font-medium">{contact.name}</div>
         <button onClick={onOpenTemplates} className="btn-ghost rounded-md px-2 py-1 text-xs"><div className="flex items-center gap-1"><Sparkles size={14}/> Templates</div></button>
       </div>
       <div className="scroll-slim flex-1 space-y-2 overflow-auto p-4">
@@ -369,16 +240,7 @@ function ChatWindow({ contact, onOpenTemplates }:{ contact: Contact; onOpenTempl
   );
 }
 
-/* ============================================================
-   ... (todo o restante do arquivo permanece igual ao seu original)
-   A partir daqui, copie exatamente as páginas Templates, Contacts,
-   ConfirmModal, AccountsPage, BroadcastPage, DashboardPage, LoginScreen,
-   e o componente principal export default, do código que você já usa.
-============================================================ */
-
-// --- Abaixo, reaproveitamos integralmente o restante do seu arquivo original ---
-
-function NewContactPanel({ onClose, onSave }:{ onClose:()=>void; onSave:(c: any)=>void }){
+function NewContactPanel({ onClose, onSave }:{ onClose:()=>void; onSave:(c: Contact)=>void }){
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -410,7 +272,7 @@ function NewContactPanel({ onClose, onSave }:{ onClose:()=>void; onSave:(c: any)
 }
 
 /* ============================================================
-   PÁGINA: TEMPLATES (ÚNICA DEFINIÇÃO)
+   PÁGINA: TEMPLATES
 ============================================================ */
 function TemplatesPage() {
   const [name, setName] = useState("boas_vindas_wj");
@@ -463,7 +325,7 @@ function TemplatesPage() {
                 <option value="AUTHENTICATION">AUTHENTICATION</option>
               </select>
             </div>
-            <div className="flex items-end">
+            <div className="flex items:end">
               <div className="text-[11px] opacity-60">{'Use variáveis {{1}}, {{2}} ...'}</div>
             </div>
           </div>
@@ -593,7 +455,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
           </div>
           <div className="space-y-2 p-3 text-sm">
             <div className="text-xs" style={{ color: theme.textMuted }}>
-              Formato esperado: <code>name, e-mail, phone, tags</code> (tags separadas por "," ou ";"). Telefones convertidos para E.164 (BR) automaticamente.
+              Formato esperado: <code>name, e-mail, phone, tags</code> (tags separadas por "," ou ";"). Telefones BR viram E.164 automaticamente.
             </div>
             <textarea value={csvPreview} onChange={(e)=>setCsvPreview(e.target.value)} rows={8} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm leading-relaxed outline-none" style={{ borderColor: theme.border }} />
             <div className="flex items-center justify-between">
@@ -695,7 +557,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
         </div>
 
         <div className="rounded-lg border p-3 text-xs" style={{ borderColor: theme.border, color: theme.textMuted }}>
-          Dica: Use os filtros para selecionar o conjunto certo antes de aplicar ações em massa. “Adicionar tag” cria a tag se não existir nos contatos selecionados.
+          Dica: Use os filtros para selecionar o conjunto certo antes de aplicar ações em massa.
         </div>
       </div>
     </div>
@@ -703,7 +565,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
 }
 
 /* ============================================================
-   MODAL DE CONFIRMAÇÃO (ÚNICO)
+   MODAL CONFIRMAÇÃO
 ============================================================ */
 function ConfirmModal({
   open, onClose, onConfirm, summary
@@ -747,7 +609,7 @@ function ConfirmModal({
 }
 
 /* ============================================================
-   PÁGINA: ACCOUNTS (WABA + NÚMERO)
+   PÁGINAS: ACCOUNTS / BROADCAST / DASHBOARD
 ============================================================ */
 function AccountsPage({
   accounts, selectedAccountId, setSelectedAccountId, selectedPhoneId, setSelectedPhoneId
@@ -772,7 +634,7 @@ function AccountsPage({
             <select value={selectedAccountId} onChange={(e)=>{ setSelectedAccountId(e.target.value); setSelectedPhoneId(''); }} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} — {acc.wabaId}</option>)}
             </select>
-            <p className="text-[11px] opacity-60"> No real: listar via Graph API <code>/&#123;WABA_ID&#125;/phone_numbers</code> com permissões adequadas.</p>
+            <p className="text-[11px] opacity-60">No real: OAuth (Facebook Login) → listar WABA e <code>/phone_numbers</code>.</p>
           </div>
         </div>
 
@@ -784,14 +646,6 @@ function AccountsPage({
               {account?.phones.map(ph => <option key={ph.id} value={ph.id}>{ph.display} — {ph.status || '—'}</option>)}
             </select>
             <div className="text-xs" style={{ color: theme.textMuted }}>Telefone selecionado: <strong>{selectedPhoneId || '—'}</strong></div>
-            <div className="rounded-md border p-2 text-xs" style={{ borderColor: theme.border, color: theme.textMuted }}>
-              <div className="mb-1 font-medium" style={{ color: theme.text }}>Como será em produção</div>
-              <ul className="list-disc space-y-1 pl-4">
-                <li>Botão “Conectar Meta” → OAuth (Facebook Login) para listar negócios/WABA que você administra.</li>
-                <li>Servidor troca por token de sistema (Business Manager) e consulta <code>/whatsapp_business_accounts</code> e <code>/phone_numbers</code>.</li>
-                <li>Você escolhe a WABA e o número padrão para disparos.</li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>
@@ -799,9 +653,6 @@ function AccountsPage({
   );
 }
 
-/* ============================================================
-   PÁGINA: BROADCAST (DISPARO)
-============================================================ */
 function BroadcastPage({
   contacts, selectedAccount, selectedPhone, onCreateCampaign
 }:{
@@ -810,7 +661,6 @@ function BroadcastPage({
   selectedPhone?: MetaPhone;
   onCreateCampaign: (c: { name: string; templateName: string; total: number; scheduleAt?: string }) => void;
 }){
-  // Templates aprovados (simulado)
   const approvedTemplates = useMemo(() => [
     { id: 'tpl_boasvindas', name: 'boas_vindas_wj', header: 'Luminárias WJ', body: 'Olá {{1}}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?', footer: 'Feito à mão no Brasil' },
     { id: 'tpl_aviso2026', name: 'aviso_pedidos_2026', header: 'Agenda 2026', body: 'Olá {{1}}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?', footer: 'Equipe WJ' },
@@ -954,105 +804,98 @@ function BroadcastPage({
           </div>
         </div>
 
-        <div className="rounded-lg border p-3 text-xs" style={{ borderColor: theme.border, color: theme.textMuted }}>
-          Dica: Use um número configurado na página <b>Contas</b>. No real, a API usará o <b>PHONE_NUMBER_ID</b> selecionado.
-        </div>
-      </div>
+        {/* Template / agendamento / confirmar */}
+        <div className="space-y-4">
+          <div className="rounded-lg border" style={{ borderColor: theme.border }}>
+            <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
+              <div className="flex items-center gap-2"><Sparkles size={16}/><div className="text-sm font-medium">Selecionar template aprovado</div></div>
+              <div className="text-xs" style={{ color: theme.textMuted }}>{selectedTpl ? selectedTpl.name : 'nenhum selecionado'}</div>
+            </div>
+            <div className="space-y-3 p-3 text-sm">
+              <label className="mb-1 block text-xs opacity-70">Template</label>
+              <select value={selectedTplId} onChange={(e)=>setSelectedTplId(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
+                <option value="">(selecione um template aprovado)</option>
+                {approvedTemplates.map(t=>(<option key={t.id} value={t.id}>{t.name}</option>))}
+              </select>
 
-      {/* Template / agendamento / confirmar */}
-      <div className="space-y-4">
-        <div className="rounded-lg border" style={{ borderColor: theme.border }}>
-          <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
-            <div className="flex items-center gap-2"><Sparkles size={16}/><div className="text-sm font-medium">Selecionar template aprovado</div></div>
-            <div className="text-xs" style={{ color: theme.textMuted }}>{selectedTpl ? selectedTpl.name : 'nenhum selecionado'}</div>
-          </div>
-          <div className="space-y-3 p-3 text-sm">
-            <label className="mb-1 block text-xs opacity-70">Template</label>
-            <select value={selectedTplId} onChange={(e)=>setSelectedTplId(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
-              <option value="">(selecione um template aprovado)</option>
-              {approvedTemplates.map(t=>(<option key={t.id} value={t.id}>{t.name}</option>))}
-            </select>
-
-            <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
-              <div className="border-b pb-2 text-xs uppercase tracking-wider" style={{ borderColor: theme.border, color: theme.textMuted }}>Pré-visualização</div>
-              <div className="mt-2 space-y-2">
-                {tplHeader && <div className="opacity-80">{tplHeader}</div>}
-                <div className="whitespace-pre-wrap">{tplBody || '—'}</div>
-                {tplFooter && <div className="text-xs opacity-60">{tplFooter}</div>}
+              <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
+                <div className="border-b pb-2 text-xs uppercase tracking-wider" style={{ borderColor: theme.border, color: theme.textMuted }}>Pré-visualização</div>
+                <div className="mt-2 space-y-2">
+                  {tplHeader && <div className="opacity-80">{tplHeader}</div>}
+                  <div className="whitespace-pre-wrap">{tplBody || '—'}</div>
+                  {tplFooter && <div className="text-xs opacity-60">{tplFooter}</div>}
+                </div>
               </div>
             </div>
           </div>
+
+          <div className="rounded-lg border" style={{ borderColor: theme.border }}>
+            <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
+              <div className="flex items-center gap-2"><BarChart3 size={16}/><div className="text-sm font-medium">Configurações do disparo</div></div>
+              <div className="text-xs" style={{ color: theme.textMuted }}>
+                {selectedAccount ? `${selectedAccount.name}` : 'Conta —' } {selectedPhone ? ` · ${selectedPhone.display}` : ''}
+              </div>
+            </div>
+
+            <div className="space-y-3 p-3 text-sm">
+              {!selectedAccount && <div className="text-xs" style={{ color: theme.warn }}>Selecione uma conta e número na aba "Contas".</div>}
+
+              <div>
+                <label className="mb-1 block text-xs opacity-70">Nome da campanha/disparo</label>
+                <input value={campaignName} onChange={(e)=>setCampaignName(e.target.value)} placeholder="Ex.: Abertura Agenda 2026 (lojas VIP)" className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
+              </div>
+
+              <div>
+                <div className="mb-1 flex items:center gap-2 text-xs opacity-80"><Clock size={14}/> Agendamento</div>
+                <label className="mb-2 flex items-center gap-2 text-xs opacity-80">
+                  <input type="checkbox" checked={scheduleEnabled} onChange={(e)=>setScheduleEnabled(e.target.checked)} />
+                  Agendar envio (Horário de Brasília — America/Sao_Paulo)
+                </label>
+                {scheduleEnabled && (
+                  <input type="datetime-local" value={when} onChange={(e)=>setWhen(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
+                )}
+                <div className="mt-1 text-xs" style={{ color: theme.textMuted }}>{scheduleLabel}</div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t px-3 py-2" style={{ borderColor: theme.border }}>
+              <div className="text-xs" style={{ color: theme.textMuted }}>Selecionados: <strong>{countSelected}</strong></div>
+              <button disabled={!canSend} onClick={openConfirm} className="rounded-md px-3 py-2 text-sm font-medium disabled:opacity-60" style={{ background: theme.accent, color: '#111' }}>
+                Revisar e confirmar
+              </button>
+            </div>
+          </div>
+
+          <ConfirmModal
+            open={confirmOpen}
+            onClose={()=>setConfirmOpen(false)}
+            onConfirm={onConfirmSend}
+            summary={{
+              count: countSelected,
+              scheduleLabel,
+              tplName: selectedTpl?.name || '',
+              header: tplHeader,
+              body: tplBody || '',
+              footer: tplFooter,
+              accountName,
+              phoneDisplay,
+              campaignName,
+            }}
+          />
         </div>
-
-        <div className="rounded-lg border" style={{ borderColor: theme.border }}>
-          <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
-            <div className="flex items-center gap-2"><BarChart3 size={16}/><div className="text-sm font-medium">Configurações do disparo</div></div>
-            <div className="text-xs" style={{ color: theme.textMuted }}>
-              {selectedAccount ? `${selectedAccount.name}` : 'Conta —' } {selectedPhone ? ` · ${selectedPhone.display}` : ''}
-            </div>
-          </div>
-
-          <div className="space-y-3 p-3 text-sm">
-            {!selectedAccount && <div className="text-xs" style={{ color: theme.warn }}>Selecione uma conta e número na aba "Contas".</div>}
-
-            <div>
-              <label className="mb-1 block text-xs opacity-70">Nome da campanha/disparo</label>
-              <input value={campaignName} onChange={(e)=>setCampaignName(e.target.value)} placeholder="Ex.: Abertura Agenda 2026 (lojas VIP)" className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
-            </div>
-
-            <div>
-              <div className="mb-1 flex items-center gap-2 text-xs opacity-80"><Clock size={14}/> Agendamento</div>
-              <label className="mb-2 flex items-center gap-2 text-xs opacity-80">
-                <input type="checkbox" checked={scheduleEnabled} onChange={(e)=>setScheduleEnabled(e.target.checked)} />
-                Agendar envio (Horário de Brasília — America/Sao_Paulo)
-              </label>
-              {scheduleEnabled && (
-                <input type="datetime-local" value={when} onChange={(e)=>setWhen(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
-              )}
-              <div className="mt-1 text-xs" style={{ color: theme.textMuted }}>{scheduleLabel}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between border-t px-3 py-2" style={{ borderColor: theme.border }}>
-            <div className="text-xs" style={{ color: theme.textMuted }}>Selecionados: <strong>{countSelected}</strong></div>
-            <button disabled={!canSend} onClick={openConfirm} className="rounded-md px-3 py-2 text-sm font-medium disabled:opacity-60" style={{ background: theme.accent, color: '#111' }}>
-              Revisar e confirmar
-            </button>
-          </div>
-        </div>
-
-        <ConfirmModal
-          open={confirmOpen}
-          onClose={()=>setConfirmOpen(false)}
-          onConfirm={onConfirmSend}
-          summary={{
-            count: countSelected,
-            scheduleLabel,
-            tplName: selectedTpl?.name || '',
-            header: tplHeader,
-            body: tplBody || '',
-            footer: tplFooter,
-            accountName,
-            phoneDisplay,
-            campaignName,
-          }}
-        />
       </div>
     </div>
   );
 }
 
-/* ============================================================
-   DASHBOARD
-============================================================ */
 function StatusBadge({ status }: { status: CampaignStatus }){
   const map = {
-    'Agendada': { bg: '#1f2a00', color: theme.warn, icon: <CalendarClock size={12}/> },
-    'Em andamento': { bg: '#0a1f15', color: '#34d399', icon: <CircleDashed size={12}/> },
-    'Concluída': { bg: '#0a1a0a', color: theme.success, icon: <CheckCircle2 size={12}/> },
+    'Agendada': { bg: '#1f2a00', color: theme.warn },
+    'Em andamento': { bg: '#0a1f15', color: '#34d399' },
+    'Concluída': { bg: '#0a1a0a', color: theme.success },
   } as const;
   const s = map[status];
-  return <span className="inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[11px]" style={{ background: s.bg, color: s.color, border: `1px solid ${theme.border}` }}>{s.icon}{status}</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[11px]" style={{ background: s.bg, color: s.color, border: `1px solid ${theme.border}` }}>{status}</span>;
 }
 
 function ProgressBar({ value }: { value: number }){
@@ -1167,7 +1010,7 @@ function DashboardPage({ campaigns, filter, setFilter }: { campaigns: Campaign[]
 }
 
 /* ============================================================
-   LOGIN
+   LOGIN + APP
 ============================================================ */
 function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void }) {
   const [email, setEmail] = useState("");
@@ -1206,7 +1049,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void })
             <label className="mb-1 block text-xs opacity-70">Senha</label>
             <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} placeholder="••••••••" />
           </div>
-          {error && <div className="rounded-md border px-3 py-2 text-xs" style={{ borderColor: theme.border, color: theme.danger }}>{error}</div>}
+          {error && <div className="rounded-md border px-3 py-2 text-xs" style={{ borderColor: theme.border, color: '#ef4444' }}>{error}</div>}
           <button type="submit" className="mt-2 w-full rounded-lg px-3 py-2 text-sm font-medium" style={{ background: theme.accent, color: '#111' }}>Entrar</button>
           <div className="text-[11px] opacity-60">Demo: admin@wj.com · wj@2025</div>
         </div>
@@ -1215,10 +1058,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void })
   );
 }
 
-/* ============================================================
-   APP PRINCIPAL
-============================================================ */
-export default function ChatPrototypeWJ() {
+export function ChatPrototypeWJ() {
   // Auth simples
   const [authUser, setAuthUser] = useState<{ name: string } | null>(null);
 
@@ -1352,7 +1192,7 @@ export default function ChatPrototypeWJ() {
             <div className="flex items-center gap-1"><Settings size={16}/> Contas</div>
           </button>
         </nav>
-        <div className="flex items-center gap-3 text-xs" style={{ color: theme.textMuted }}>
+        <div className="flex items-center gap-3 text-xs" style={{ color: '#9b9b9b' }}>
           <div className="hidden md:block">{authUser.name}</div>
           <div className="hidden items-center gap-1 md:flex">
             <Building2 size={14}/>
@@ -1388,7 +1228,7 @@ export default function ChatPrototypeWJ() {
           <div className="flex w-full flex-1 flex-col">
             <div className="border-b px-4 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
               <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Gerenciar Contatos</div>
+                <div className="text-xs uppercase tracking-[0.2em]" style={{ color: '#9b9b9b' }}>Gerenciar Contatos</div>
                 <button className="btn-ghost rounded-md px-3 py-1.5 text-xs" onClick={()=>setOpenNewContact(true)}><div className="flex items-center gap-1 opacity-90"><Plus size={14}/> Novo</div></button>
               </div>
             </div>
@@ -1411,7 +1251,7 @@ export default function ChatPrototypeWJ() {
         {activeTab === 'broadcast' && (
           <div className="flex w-full flex-1 flex-col">
             <div className="border-b px-4 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
-              <div className="text-xs uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Disparo de Template</div>
+              <div className="text-xs uppercase tracking-[0.2em]" style={{ color: '#9b9b9b' }}>Disparo de Template</div>
             </div>
             <BroadcastPage contacts={contacts} selectedAccount={selectedAccount} selectedPhone={selectedPhone} onCreateCampaign={onCreateCampaign} />
           </div>
@@ -1420,7 +1260,7 @@ export default function ChatPrototypeWJ() {
         {activeTab === 'accounts' && (
           <div className="flex w-full flex-1 flex-col">
             <AccountsPage
-              accounts={accounts}
+              accounts={MOCK_ACCOUNTS}
               selectedAccountId={selectedAccountId}
               setSelectedAccountId={setSelectedAccountId}
               selectedPhoneId={selectedPhoneId}
@@ -1434,3 +1274,6 @@ export default function ChatPrototypeWJ() {
     </div>
   );
 }
+
+// Exporta nomeado e default, para suportar ambos os tipos de import
+export default ChatPrototypeWJ;
