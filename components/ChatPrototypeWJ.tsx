@@ -4,6 +4,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+import ConversationsPanel from './ConversationsPanel';
   // UI / status
   BarChart3, CalendarClock, CheckCircle2, CircleDashed, Clock, Filter as FilterIcon,
   MessagesSquare, Send, Settings, Shield, X, LogOut, Building2, Smartphone, Plus,
@@ -1244,9 +1245,10 @@ export default function ChatPrototypeWJ() {
         )}
 
         {activeTab === 'chat' && (
-          <>
-            {showSidebar && (
-              <Sidebar contacts={contacts} selected={selected} onSelect={setSelected} onOpenNew={()=>setOpenNewContact(true)} />
+  <div className="flex-1 min-h-0">
+    <ConversationsPanel />
+  </div>
+)} />
             )}
             <div className="flex min-w-0 flex-1 flex-col">
               <ChatWindow contact={selectedContact} onOpenTemplates={()=>setActiveTab('templates')} />
