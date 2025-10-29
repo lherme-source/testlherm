@@ -5,3 +5,7 @@
 :root { color-scheme: dark; }
 html, body { height: 100%; }
 .scroll-slim { scrollbar-width: thin; scrollbar-color: #333 transparent; }
+
+/* WJ chat panel base height */
+:root, html, body { height: 100%; }
+body { background: #0a0a0a; }
