@@ -1,5 +1,5 @@
-   import { ChatPrototypeWJ } from '@/components/ChatPrototypeWJ';
+import { ChatPrototypeWJ } from '@/components/ChatPrototypeWJ';
 
-   export default function Page() {
-     return <ChatPrototypeWJ />;
-   }
+export default function Page() {
+  return <ChatPrototypeWJ />;
+}
