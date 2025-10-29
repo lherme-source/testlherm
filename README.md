@@ -1,22 +1,19 @@
-# Painel WJ — Amber (Funcional)
+# Patch: Amber Color + Conversations UI
 
-Projeto Next 14 + TypeScript + Tailwind com o componente `ChatPrototypeWJ` (client) usando **âmbar** como destaque.
-Inclui `lucide-react` e `framer-motion`.
+This package contains an updated `components/ChatPrototypeWJ.tsx` with:
+- Accent color changed to **#d6a65c** (and hover adjusted).
+- Conversations sidebar redesigned (pinned, unread badge, online dot, last message preview).
+- Chat header shows **online agora** when applicable.
+- Contact type and mocks enhanced to match the new UI.
 
-## Rodar local
-```bash
-npm i
-npm run dev
-```
+## How to apply
 
-## Build
-```bash
-npm run build
-npm start
-```
+1) Replace your existing file with the one in `components/ChatPrototypeWJ.tsx`.
+2) Rebuild and deploy (Vercel will auto‑deploy on push).
 
-## Observações
-- O arquivo principal está em `components/ChatPrototypeWJ.tsx` (igual ao código enviado).
-- `app/page.tsx` monta o componente direto.
-- `app/globals.css` já inclui o Tailwind.
-- Alias `@/` configurado no `tsconfig.json`.
+> If you prefer a git patch, copy `wj-amber-chat.patch` and run:
+> 
+> ```bash
+> git apply wj-amber-chat.patch
+> ```
+

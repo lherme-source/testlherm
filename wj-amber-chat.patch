@@ -1,0 +1,24 @@
+*** Begin Patch
+*** Update File: components/ChatPrototypeWJ.tsx
+@@
+-  accent: '#F5C241',        // âmbar principal
++  accent: '#d6a65c',        // novo âmbar principal
+@@
+-        .btn-ghost:hover { background: #F5C2411a; }
++        .btn-ghost:hover { background: #d6a65c1a; }
+@@
+-type Contact = {
++type Contact = {
+   id: string;
+   name: string;
+   phone: string; // E.164 preferencial
+   email?: string;
+   tags?: string[];
++  initials?: string;
++  subtitle?: string;
++  lastMessage?: string;
++  unread?: number;
++  pinned?: boolean;
++  online?: boolean;
+ };
+*** End Patch
