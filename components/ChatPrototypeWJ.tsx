@@ -210,6 +210,12 @@ function ChatWindow({ contact, onOpenTemplates }:{ contact: Contact; onOpenTempl
   const [list, setList] = useState<{id:string; from:'me'|'them'; text:string; at:number}[]>([
     { id: uid('m'), from: 'them', text: `Olá, aqui é ${contact.name}. Quero saber mais sobre os pendentes.`, at: Date.now()-1000*60*50 },
   ]);
+  const lastThemId = useMemo(() => {
+  for (let i = list.length - 1; i >= 0; i--) {
+    if (list[i].from === 'them') return list[i].id;
+  }
+  return null;
+}, [list]);
 
   const send = ()=>{
     if (!msg.trim()) return;
@@ -226,7 +232,21 @@ function ChatWindow({ contact, onOpenTemplates }:{ contact: Contact; onOpenTempl
       <div className="scroll-slim flex-1 space-y-2 overflow-auto p-4">
         {list.map(m=>(
           <div key={m.id} className={`max-w-[70%] rounded-lg p-2 text-sm ${m.from==='me'?'ml-auto':''}`} style={{ background: m.from==='me'?theme.accent:'#1a1a1c', color: m.from==='me'?'#111':theme.text }}>
-            <div className="whitespace-pre-wrap">{m.text}</div>
+            <div className="whitespace-pre-wrap">{m.text}{/* tags do contato abaixo da ÚLTIMA mensagem dele */}
+{m.from === 'them' && m.id === lastThemId && (contact.tags?.length ? (
+  <div className="mt-1 flex flex-wrap gap-1">
+    {contact.tags.map(t => (
+      <span
+        key={t}
+        className="rounded-md px-1.5 py-[2px] text-[10px]"
+        style={{ background: "#ffffff0f", border: `1px solid ${theme.border}`, color: theme.textMuted }}
+      >
+        {t}
+      </span>
+    ))}
+  </div>
+) : null)}
+</div>
           </div>
         ))}
       </div>
