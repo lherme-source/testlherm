@@ -1,11 +1,15 @@
+// components/ChatPrototypeWJ.tsx
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+  // UI / status
   BarChart3, CalendarClock, CheckCircle2, CircleDashed, Clock, Filter as FilterIcon,
   MessagesSquare, Send, Settings, Shield, X, LogOut, Building2, Smartphone, Plus,
+  // Edição/inputs
   Bold, Italic, Quote, List, Hash, Upload, Search, Trash2, Sparkles, Users,
+  // evitar conflito com next/link
   Link as Link2,
 } from 'lucide-react';
 
@@ -19,11 +23,11 @@ const theme = {
   border: '#2a2a2a',
   text: '#f5f5f5',
   textMuted: '#9b9b9b',
-  // âmbar padronizado WJ
-  accent: '#d6a65c',   // rgb(214, 166, 92)
+  // ↓↓↓ troque aqui
+  accent: '#F5C241',        // âmbar principal
   success: '#34d399',
   danger: '#ef4444',
-  warn: '#d6a65c',     // usa o mesmo âmbar para avisos
+  warn: '#F5C241',          // use o mesmo âmbar para alertas
 } as const;
 
 function FontGlobal() {
@@ -36,15 +40,17 @@ function FontGlobal() {
         font-style: normal;
         font-display: swap;
       }
-      :root { --accent: ${theme.accent}; }
-      .tab { border-bottom: 2px solid transparent; }
-      .tab-active { border-bottom-color: var(--accent); color: #fff; }
-      .btn-ghost:hover { background: rgba(214, 166, 92, 0.1); }
-      input:focus, textarea:focus, select:focus {
-        border-color: var(--accent) !important;
-        box-shadow: 0 0 0 3px rgba(214, 166, 92, 0.15);
-      }
-      .dot-accent { background: var(--accent); }
+        :root { --accent: ${theme.accent}; }
+        .tab { border-bottom: 2px solid transparent; }
+        .tab-active { border-bottom-color: var(--accent); color: #fff; }
+        .btn-ghost:hover { background: #F5C2411a; }
+        /* inputs/bordas em foco com âmbar bem sutil */
+        input:focus, textarea:focus, select:focus {
+          border-color: var(--accent) !important;
+          box-shadow: 0 0 0 3px rgba(245, 194, 65, 0.15);
+        }
+        /* badges/dots que usam o destaque */
+        .dot-accent { background: var(--accent); }
     `}</style>
   );
 }
@@ -125,17 +131,19 @@ const MOCK_ACCOUNTS: MetaAccount[] = [
 function uid(prefix='id'){ return `${prefix}_${Math.random().toString(36).slice(2,9)}`; }
 
 function normalizeBRPhoneToE164(raw: string){
+  // remove não-dígitos
   const digits = raw.replace(/\D+/g,'');
-  return digits.startsWith('55') ? `+${digits}` : `+55${digits}`;
+  if (digits.startsWith('55')) return `+${digits}`;
+  return `+55${digits}`;
 }
 
 function parseCsvContacts(csv: string): Contact[] {
-  // esperado: name,e-mail,phone,tags
+  // form esperado: name,e-mail,phone,tags
   const lines = csv.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   if (!lines.length) return [];
   const out: Contact[] = [];
-  for (const line of lines){
-    const row = line.split(',').map(x=>x.trim());
+  for (let i=0;i<lines.length;i++){
+    const row = lines[i].split(',').map(x=>x.trim());
     if (row.length < 3) continue;
     const [name, email, phone, tagsRaw] = row;
     const tags = (tagsRaw||'').split(/[;,]/).map(t=>t.trim()).filter(Boolean);
@@ -173,7 +181,7 @@ function appendSnippet(prev: string, snippet: string){
 }
 
 /* ============================================================
-   COMPONENTES BÁSICOS
+   COMPONENTES BÁSICOS DO CHAT
 ============================================================ */
 function Sidebar({ contacts, selected, onSelect, onOpenNew }:{
   contacts: Contact[];
@@ -210,12 +218,6 @@ function ChatWindow({ contact, onOpenTemplates }:{ contact: Contact; onOpenTempl
   const [list, setList] = useState<{id:string; from:'me'|'them'; text:string; at:number}[]>([
     { id: uid('m'), from: 'them', text: `Olá, aqui é ${contact.name}. Quero saber mais sobre os pendentes.`, at: Date.now()-1000*60*50 },
   ]);
-  const lastThemId = useMemo(() => {
-  for (let i = list.length - 1; i >= 0; i--) {
-    if (list[i].from === 'them') return list[i].id;
-  }
-  return null;
-}, [list]);
 
   const send = ()=>{
     if (!msg.trim()) return;
@@ -232,21 +234,7 @@ function ChatWindow({ contact, onOpenTemplates }:{ contact: Contact; onOpenTempl
       <div className="scroll-slim flex-1 space-y-2 overflow-auto p-4">
         {list.map(m=>(
           <div key={m.id} className={`max-w-[70%] rounded-lg p-2 text-sm ${m.from==='me'?'ml-auto':''}`} style={{ background: m.from==='me'?theme.accent:'#1a1a1c', color: m.from==='me'?'#111':theme.text }}>
-            <div className="whitespace-pre-wrap">{m.text}{/* tags do contato abaixo da ÚLTIMA mensagem dele */}
-{m.from === 'them' && m.id === lastThemId && (contact.tags?.length ? (
-  <div className="mt-1 flex flex-wrap gap-1">
-    {contact.tags.map(t => (
-      <span
-        key={t}
-        className="rounded-md px-1.5 py-[2px] text-[10px]"
-        style={{ background: "#ffffff0f", border: `1px solid ${theme.border}`, color: theme.textMuted }}
-      >
-        {t}
-      </span>
-    ))}
-  </div>
-) : null)}
-</div>
+            <div className="whitespace-pre-wrap">{m.text}</div>
           </div>
         ))}
       </div>
@@ -292,7 +280,7 @@ function NewContactPanel({ onClose, onSave }:{ onClose:()=>void; onSave:(c: Cont
 }
 
 /* ============================================================
-   PÁGINA: TEMPLATES
+   PÁGINA: TEMPLATES (ÚNICA DEFINIÇÃO)
 ============================================================ */
 function TemplatesPage() {
   const [name, setName] = useState("boas_vindas_wj");
@@ -345,7 +333,7 @@ function TemplatesPage() {
                 <option value="AUTHENTICATION">AUTHENTICATION</option>
               </select>
             </div>
-            <div className="flex items:end">
+            <div className="flex items-end">
               <div className="text-[11px] opacity-60">{'Use variáveis {{1}}, {{2}} ...'}</div>
             </div>
           </div>
@@ -475,7 +463,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
           </div>
           <div className="space-y-2 p-3 text-sm">
             <div className="text-xs" style={{ color: theme.textMuted }}>
-              Formato esperado: <code>name, e-mail, phone, tags</code> (tags separadas por "," ou ";"). Telefones BR viram E.164 automaticamente.
+              Formato esperado: <code>name, e-mail, phone, tags</code> (tags separadas por "," ou ";"). Telefones convertidos para E.164 (BR) automaticamente.
             </div>
             <textarea value={csvPreview} onChange={(e)=>setCsvPreview(e.target.value)} rows={8} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm leading-relaxed outline-none" style={{ borderColor: theme.border }} />
             <div className="flex items-center justify-between">
@@ -577,7 +565,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
         </div>
 
         <div className="rounded-lg border p-3 text-xs" style={{ borderColor: theme.border, color: theme.textMuted }}>
-          Dica: Use os filtros para selecionar o conjunto certo antes de aplicar ações em massa.
+          Dica: Use os filtros para selecionar o conjunto certo antes de aplicar ações em massa. “Adicionar tag” cria a tag se não existir nos contatos selecionados.
         </div>
       </div>
     </div>
@@ -585,7 +573,7 @@ João,joao@exemplo.com,5511988887777,revenda`);
 }
 
 /* ============================================================
-   MODAL CONFIRMAÇÃO
+   MODAL DE CONFIRMAÇÃO (ÚNICO)
 ============================================================ */
 function ConfirmModal({
   open, onClose, onConfirm, summary
@@ -629,9 +617,8 @@ function ConfirmModal({
 }
 
 /* ============================================================
-   PÁGINAS: ACCOUNTS / BROADCAST / DASHBOARD
+   PÁGINA: ACCOUNTS (WABA + NÚMERO)
 ============================================================ */
-import ChatPanel from "./ChatPanel";
 function AccountsPage({
   accounts, selectedAccountId, setSelectedAccountId, selectedPhoneId, setSelectedPhoneId
 }:{
@@ -655,7 +642,7 @@ function AccountsPage({
             <select value={selectedAccountId} onChange={(e)=>{ setSelectedAccountId(e.target.value); setSelectedPhoneId(''); }} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
               {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name} — {acc.wabaId}</option>)}
             </select>
-            <p className="text-[11px] opacity-60">No real: OAuth (Facebook Login) → listar WABA e <code>/phone_numbers</code>.</p>
+            <p className="text-[11px] opacity-60"> No real: listar via Graph API <code>/&#123;WABA_ID&#125;/phone_numbers</code> com permissões adequadas.</p>
           </div>
         </div>
 
@@ -667,6 +654,14 @@ function AccountsPage({
               {account?.phones.map(ph => <option key={ph.id} value={ph.id}>{ph.display} — {ph.status || '—'}</option>)}
             </select>
             <div className="text-xs" style={{ color: theme.textMuted }}>Telefone selecionado: <strong>{selectedPhoneId || '—'}</strong></div>
+            <div className="rounded-md border p-2 text-xs" style={{ borderColor: theme.border, color: theme.textMuted }}>
+              <div className="mb-1 font-medium" style={{ color: theme.text }}>Como será em produção</div>
+              <ul className="list-disc space-y-1 pl-4">
+                <li>Botão “Conectar Meta” → OAuth (Facebook Login) para listar negócios/WABA que você administra.</li>
+                <li>Servidor troca por token de sistema (Business Manager) e consulta <code>/whatsapp_business_accounts</code> e <code>/phone_numbers</code>.</li>
+                <li>Você escolhe a WABA e o número padrão para disparos.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -674,6 +669,9 @@ function AccountsPage({
   );
 }
 
+/* ============================================================
+   PÁGINA: BROADCAST (DISPARO)
+============================================================ */
 function BroadcastPage({
   contacts, selectedAccount, selectedPhone, onCreateCampaign
 }:{
@@ -682,6 +680,7 @@ function BroadcastPage({
   selectedPhone?: MetaPhone;
   onCreateCampaign: (c: { name: string; templateName: string; total: number; scheduleAt?: string }) => void;
 }){
+  // Templates aprovados (simulado)
   const approvedTemplates = useMemo(() => [
     { id: 'tpl_boasvindas', name: 'boas_vindas_wj', header: 'Luminárias WJ', body: 'Olá {{1}}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?', footer: 'Feito à mão no Brasil' },
     { id: 'tpl_aviso2026', name: 'aviso_pedidos_2026', header: 'Agenda 2026', body: 'Olá {{1}}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?', footer: 'Equipe WJ' },
@@ -825,98 +824,105 @@ function BroadcastPage({
           </div>
         </div>
 
-        {/* Template / agendamento / confirmar */}
-        <div className="space-y-4">
-          <div className="rounded-lg border" style={{ borderColor: theme.border }}>
-            <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
-              <div className="flex items-center gap-2"><Sparkles size={16}/><div className="text-sm font-medium">Selecionar template aprovado</div></div>
-              <div className="text-xs" style={{ color: theme.textMuted }}>{selectedTpl ? selectedTpl.name : 'nenhum selecionado'}</div>
-            </div>
-            <div className="space-y-3 p-3 text-sm">
-              <label className="mb-1 block text-xs opacity-70">Template</label>
-              <select value={selectedTplId} onChange={(e)=>setSelectedTplId(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
-                <option value="">(selecione um template aprovado)</option>
-                {approvedTemplates.map(t=>(<option key={t.id} value={t.id}>{t.name}</option>))}
-              </select>
-
-              <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
-                <div className="border-b pb-2 text-xs uppercase tracking-wider" style={{ borderColor: theme.border, color: theme.textMuted }}>Pré-visualização</div>
-                <div className="mt-2 space-y-2">
-                  {tplHeader && <div className="opacity-80">{tplHeader}</div>}
-                  <div className="whitespace-pre-wrap">{tplBody || '—'}</div>
-                  {tplFooter && <div className="text-xs opacity-60">{tplFooter}</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-lg border" style={{ borderColor: theme.border }}>
-            <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
-              <div className="flex items-center gap-2"><BarChart3 size={16}/><div className="text-sm font-medium">Configurações do disparo</div></div>
-              <div className="text-xs" style={{ color: theme.textMuted }}>
-                {selectedAccount ? `${selectedAccount.name}` : 'Conta —' } {selectedPhone ? ` · ${selectedPhone.display}` : ''}
-              </div>
-            </div>
-
-            <div className="space-y-3 p-3 text-sm">
-              {!selectedAccount && <div className="text-xs" style={{ color: theme.warn }}>Selecione uma conta e número na aba "Contas".</div>}
-
-              <div>
-                <label className="mb-1 block text-xs opacity-70">Nome da campanha/disparo</label>
-                <input value={campaignName} onChange={(e)=>setCampaignName(e.target.value)} placeholder="Ex.: Abertura Agenda 2026 (lojas VIP)" className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
-              </div>
-
-              <div>
-                <div className="mb-1 flex items:center gap-2 text-xs opacity-80"><Clock size={14}/> Agendamento</div>
-                <label className="mb-2 flex items-center gap-2 text-xs opacity-80">
-                  <input type="checkbox" checked={scheduleEnabled} onChange={(e)=>setScheduleEnabled(e.target.checked)} />
-                  Agendar envio (Horário de Brasília — America/Sao_Paulo)
-                </label>
-                {scheduleEnabled && (
-                  <input type="datetime-local" value={when} onChange={(e)=>setWhen(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
-                )}
-                <div className="mt-1 text-xs" style={{ color: theme.textMuted }}>{scheduleLabel}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between border-t px-3 py-2" style={{ borderColor: theme.border }}>
-              <div className="text-xs" style={{ color: theme.textMuted }}>Selecionados: <strong>{countSelected}</strong></div>
-              <button disabled={!canSend} onClick={openConfirm} className="rounded-md px-3 py-2 text-sm font-medium disabled:opacity-60" style={{ background: theme.accent, color: '#111' }}>
-                Revisar e confirmar
-              </button>
-            </div>
-          </div>
-
-          <ConfirmModal
-            open={confirmOpen}
-            onClose={()=>setConfirmOpen(false)}
-            onConfirm={onConfirmSend}
-            summary={{
-              count: countSelected,
-              scheduleLabel,
-              tplName: selectedTpl?.name || '',
-              header: tplHeader,
-              body: tplBody || '',
-              footer: tplFooter,
-              accountName,
-              phoneDisplay,
-              campaignName,
-            }}
-          />
+        <div className="rounded-lg border p-3 text-xs" style={{ borderColor: theme.border, color: theme.textMuted }}>
+          Dica: Use um número configurado na página <b>Contas</b>. No real, a API usará o <b>PHONE_NUMBER_ID</b> selecionado.
         </div>
+      </div>
+
+      {/* Template / agendamento / confirmar */}
+      <div className="space-y-4">
+        <div className="rounded-lg border" style={{ borderColor: theme.border }}>
+          <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
+            <div className="flex items-center gap-2"><Sparkles size={16}/><div className="text-sm font-medium">Selecionar template aprovado</div></div>
+            <div className="text-xs" style={{ color: theme.textMuted }}>{selectedTpl ? selectedTpl.name : 'nenhum selecionado'}</div>
+          </div>
+          <div className="space-y-3 p-3 text-sm">
+            <label className="mb-1 block text-xs opacity-70">Template</label>
+            <select value={selectedTplId} onChange={(e)=>setSelectedTplId(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
+              <option value="">(selecione um template aprovado)</option>
+              {approvedTemplates.map(t=>(<option key={t.id} value={t.id}>{t.name}</option>))}
+            </select>
+
+            <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
+              <div className="border-b pb-2 text-xs uppercase tracking-wider" style={{ borderColor: theme.border, color: theme.textMuted }}>Pré-visualização</div>
+              <div className="mt-2 space-y-2">
+                {tplHeader && <div className="opacity-80">{tplHeader}</div>}
+                <div className="whitespace-pre-wrap">{tplBody || '—'}</div>
+                {tplFooter && <div className="text-xs opacity-60">{tplFooter}</div>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border" style={{ borderColor: theme.border }}>
+          <div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
+            <div className="flex items-center gap-2"><BarChart3 size={16}/><div className="text-sm font-medium">Configurações do disparo</div></div>
+            <div className="text-xs" style={{ color: theme.textMuted }}>
+              {selectedAccount ? `${selectedAccount.name}` : 'Conta —' } {selectedPhone ? ` · ${selectedPhone.display}` : ''}
+            </div>
+          </div>
+
+          <div className="space-y-3 p-3 text-sm">
+            {!selectedAccount && <div className="text-xs" style={{ color: theme.warn }}>Selecione uma conta e número na aba "Contas".</div>}
+
+            <div>
+              <label className="mb-1 block text-xs opacity-70">Nome da campanha/disparo</label>
+              <input value={campaignName} onChange={(e)=>setCampaignName(e.target.value)} placeholder="Ex.: Abertura Agenda 2026 (lojas VIP)" className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
+            </div>
+
+            <div>
+              <div className="mb-1 flex items-center gap-2 text-xs opacity-80"><Clock size={14}/> Agendamento</div>
+              <label className="mb-2 flex items-center gap-2 text-xs opacity-80">
+                <input type="checkbox" checked={scheduleEnabled} onChange={(e)=>setScheduleEnabled(e.target.checked)} />
+                Agendar envio (Horário de Brasília — America/Sao_Paulo)
+              </label>
+              {scheduleEnabled && (
+                <input type="datetime-local" value={when} onChange={(e)=>setWhen(e.target.value)} className="w-full rounded-md border bg-transparent px-2 py-2 text-sm outline-none" style={{ borderColor: theme.border }} />
+              )}
+              <div className="mt-1 text-xs" style={{ color: theme.textMuted }}>{scheduleLabel}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t px-3 py-2" style={{ borderColor: theme.border }}>
+            <div className="text-xs" style={{ color: theme.textMuted }}>Selecionados: <strong>{countSelected}</strong></div>
+            <button disabled={!canSend} onClick={openConfirm} className="rounded-md px-3 py-2 text-sm font-medium disabled:opacity-60" style={{ background: theme.accent, color: '#111' }}>
+              Revisar e confirmar
+            </button>
+          </div>
+        </div>
+
+        <ConfirmModal
+          open={confirmOpen}
+          onClose={()=>setConfirmOpen(false)}
+          onConfirm={onConfirmSend}
+          summary={{
+            count: countSelected,
+            scheduleLabel,
+            tplName: selectedTpl?.name || '',
+            header: tplHeader,
+            body: tplBody || '',
+            footer: tplFooter,
+            accountName,
+            phoneDisplay,
+            campaignName,
+          }}
+        />
       </div>
     </div>
   );
 }
 
+/* ============================================================
+   DASHBOARD
+============================================================ */
 function StatusBadge({ status }: { status: CampaignStatus }){
   const map = {
-    'Agendada': { bg: '#1f2a00', color: theme.warn },
-    'Em andamento': { bg: '#0a1f15', color: '#34d399' },
-    'Concluída': { bg: '#0a1a0a', color: theme.success },
+    'Agendada': { bg: '#1f2a00', color: theme.warn, icon: <CalendarClock size={12}/> },
+    'Em andamento': { bg: '#0a1f15', color: '#34d399', icon: <CircleDashed size={12}/> },
+    'Concluída': { bg: '#0a1a0a', color: theme.success, icon: <CheckCircle2 size={12}/> },
   } as const;
   const s = map[status];
-  return <span className="inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[11px]" style={{ background: s.bg, color: s.color, border: `1px solid ${theme.border}` }}>{status}</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full px-2 py-[2px] text-[11px]" style={{ background: s.bg, color: s.color, border: `1px solid ${theme.border}` }}>{s.icon}{status}</span>;
 }
 
 function ProgressBar({ value }: { value: number }){
@@ -1031,7 +1037,7 @@ function DashboardPage({ campaigns, filter, setFilter }: { campaigns: Campaign[]
 }
 
 /* ============================================================
-   LOGIN + APP
+   LOGIN
 ============================================================ */
 function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void }) {
   const [email, setEmail] = useState("");
@@ -1070,7 +1076,7 @@ function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void })
             <label className="mb-1 block text-xs opacity-70">Senha</label>
             <input type="password" value={password} onChange={(e)=>setPassword(e.target.value)} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }} placeholder="••••••••" />
           </div>
-          {error && <div className="rounded-md border px-3 py-2 text-xs" style={{ borderColor: theme.border, color: '#ef4444' }}>{error}</div>}
+          {error && <div className="rounded-md border px-3 py-2 text-xs" style={{ borderColor: theme.border, color: theme.danger }}>{error}</div>}
           <button type="submit" className="mt-2 w-full rounded-lg px-3 py-2 text-sm font-medium" style={{ background: theme.accent, color: '#111' }}>Entrar</button>
           <div className="text-[11px] opacity-60">Demo: admin@wj.com · wj@2025</div>
         </div>
@@ -1079,7 +1085,10 @@ function LoginScreen({ onLogin }: { onLogin: (user: { name: string }) => void })
   );
 }
 
-export function ChatPrototypeWJ() {
+/* ============================================================
+   APP PRINCIPAL
+============================================================ */
+export default function ChatPrototypeWJ() {
   // Auth simples
   const [authUser, setAuthUser] = useState<{ name: string } | null>(null);
 
@@ -1199,20 +1208,6 @@ export function ChatPrototypeWJ() {
           </button>
           <button className={`tab pb-3 ${activeTab==='chat' ? 'tab-active' : 'opacity-70 hover:opacity-100'}`} onClick={()=>setActiveTab('chat')}>
             <div className="flex items-center gap-1"><MessagesSquare size={16}/> Conversas</div>
-            {activeTab === "chat" && (
-  <ChatPanel
-    contacts={contacts}                    // opcional: usa mocks se não passar
-    threads={MOCK_THREADS}                 // opcional: usa mocks se não passar
-    selectedId={selected}                  // opcional
-    onChangeSelected={setSelected}         // opcional
-    onSendMessage={(contactId, text) => {
-      // aqui você integra com sua lógica (ex.: enviar via API)
-      console.log("Enviar:", contactId, text);
-    }}
-    onOpenTemplates={() => setActiveTab("templates")}
-    style={{ height: "calc(100vh - 48px)" }} // ajuste se precisar
-  />
-)}
           </button>
           <button className={`tab pb-3 ${activeTab==='contacts' ? 'tab-active' : 'opacity-70 hover:opacity-100'}`} onClick={()=>setActiveTab('contacts')}>
             <div className="flex items-center gap-1"><Users size={16}/> Contatos</div>
@@ -1227,7 +1222,7 @@ export function ChatPrototypeWJ() {
             <div className="flex items-center gap-1"><Settings size={16}/> Contas</div>
           </button>
         </nav>
-        <div className="flex items-center gap-3 text-xs" style={{ color: '#9b9b9b' }}>
+        <div className="flex items-center gap-3 text-xs" style={{ color: theme.textMuted }}>
           <div className="hidden md:block">{authUser.name}</div>
           <div className="hidden items-center gap-1 md:flex">
             <Building2 size={14}/>
@@ -1263,7 +1258,7 @@ export function ChatPrototypeWJ() {
           <div className="flex w-full flex-1 flex-col">
             <div className="border-b px-4 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
               <div className="flex items-center justify-between">
-                <div className="text-xs uppercase tracking-[0.2em]" style={{ color: '#9b9b9b' }}>Gerenciar Contatos</div>
+                <div className="text-xs uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Gerenciar Contatos</div>
                 <button className="btn-ghost rounded-md px-3 py-1.5 text-xs" onClick={()=>setOpenNewContact(true)}><div className="flex items-center gap-1 opacity-90"><Plus size={14}/> Novo</div></button>
               </div>
             </div>
@@ -1286,7 +1281,7 @@ export function ChatPrototypeWJ() {
         {activeTab === 'broadcast' && (
           <div className="flex w-full flex-1 flex-col">
             <div className="border-b px-4 py-2" style={{ borderColor: theme.border, background: theme.panel }}>
-              <div className="text-xs uppercase tracking-[0.2em]" style={{ color: '#9b9b9b' }}>Disparo de Template</div>
+              <div className="text-xs uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Disparo de Template</div>
             </div>
             <BroadcastPage contacts={contacts} selectedAccount={selectedAccount} selectedPhone={selectedPhone} onCreateCampaign={onCreateCampaign} />
           </div>
@@ -1295,7 +1290,7 @@ export function ChatPrototypeWJ() {
         {activeTab === 'accounts' && (
           <div className="flex w-full flex-1 flex-col">
             <AccountsPage
-              accounts={MOCK_ACCOUNTS}
+              accounts={accounts}
               selectedAccountId={selectedAccountId}
               setSelectedAccountId={setSelectedAccountId}
               selectedPhoneId={selectedPhoneId}
@@ -1309,6 +1304,3 @@ export function ChatPrototypeWJ() {
     </div>
   );
 }
-
-// Exporta nomeado e default, para suportar ambos os tipos de import
-export default ChatPrototypeWJ;
