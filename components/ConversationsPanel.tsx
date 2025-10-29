@@ -103,6 +103,32 @@ export default function ConversationsPanel() {
   const [query, setQuery] = useState("");
   const [threads, setThreads] = useState<Thread[]>(initialThreads);
   const [activeId, setActiveId] = useState<string>("1");
+  const [msg, setMsg] = useState("");
+  const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(MESSAGES);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [showFile, setShowFile] = useState<"doc"|"img"|false>(false);
+  const [fileName, setFileName] = useState<string>("");
+  const [pastedImage, setPastedImage] = useState<string | null>(null); // base64 da imagem colada
+
+  // Handler para colar imagem (printscreen)
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData.items;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.indexOf("image") !== -1) {
+        const file = item.getAsFile();
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            setPastedImage(ev.target?.result as string);
+          };
+          reader.readAsDataURL(file);
+        }
+        e.preventDefault();
+        break;
+      }
+    }
+  };
 
   const active = useMemo(() => threads.find((t) => t.id === activeId)!, [threads, activeId]);
 
@@ -112,11 +138,74 @@ export default function ConversationsPanel() {
     return threads.filter((t) => [t.name, t.last, ...(t.tags || [])].join(" ").toLowerCase().includes(q));
   }, [query, threads]);
 
-  const messages = useMemo<Message[]>(() => MESSAGES[activeId] || [], [activeId]);
+  const messages = useMemo<Message[]>(() => messagesMap[activeId] || [], [messagesMap, activeId]);
 
   useEffect(() => {
     setThreads((prev) => prev.map((t) => (t.id === activeId ? { ...t, unread: 0 } : t)));
   }, [activeId]);
+
+  // Envia mensagem ou imagem colada
+  const send = () => {
+    if (pastedImage) {
+      const newMsg: Message & { image?: string } = {
+        id: `img_${Date.now()}`,
+        who: "me",
+        text: "[imagem colada]",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        status: "none",
+        image: pastedImage,
+      };
+      setMessagesMap((prev: Record<string, Message[]>) => ({
+        ...prev,
+        [activeId]: [...(prev[activeId] || []), newMsg],
+      }));
+      setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: "[imagem]", time: newMsg.time } : t));
+      setPastedImage(null);
+      return;
+    }
+    const text = msg.trim();
+    if (!text) return;
+    const newMsg: Message = {
+      id: `me_${Date.now()}`,
+      who: "me",
+      text,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status: "none",
+    };
+    setMessagesMap((prev: Record<string, Message[]>) => ({
+      ...prev,
+      [activeId]: [...(prev[activeId] || []), newMsg],
+    }));
+    setMsg("");
+    setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: text, time: newMsg.time } : t));
+  };
+
+  // Handler para emoji picker
+  const handleEmoji = (emoji: string) => {
+    setMsg(prev => prev + emoji);
+    setShowEmoji(false);
+  };
+
+  // Handler para arquivo
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileName(file.name);
+    setShowFile(false);
+    // Opcional: adicionar mensagem de arquivo ao chat
+    const newMsg: Message = {
+      id: `file_${Date.now()}`,
+      who: "me",
+      text: `📎 ${file.name}`,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status: "none",
+    };
+    setMessagesMap((prev) => ({
+      ...prev,
+      [activeId]: [...(prev[activeId] || []), newMsg],
+    }));
+    setThreads((prev) => prev.map((t) => t.id === activeId ? { ...t, last: newMsg.text, time: newMsg.time } : t));
+  };
 
   return (
     <div className="h-full w-full overflow-hidden bg-neutral-900 text-neutral-100">
@@ -199,6 +288,10 @@ export default function ConversationsPanel() {
             {messages.map((m) => (
               <div key={m.id} className={`flex ${m.who === "me" ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[70%]">
+                  {/* Se a mensagem tem imagem colada, exibe a imagem */}
+                  {('image' in m && m.image) ? (
+                    <img src={m.image} alt="imagem enviada" className="rounded-2xl max-w-xs max-h-40 mb-2 border border-neutral-700" />
+                  ) : null}
                   <div className={`rounded-2xl px-4 py-3 text-sm ${m.who === "me" ? "text-black" : "text-neutral-200"}`} style={{ backgroundColor: m.who === "me" ? AMBER : "#1f1f1f" }}>{m.text}</div>
                   <div className={`mt-1 flex items-center gap-1 text-[10px] ${m.who === "me" ? "justify-end text-neutral-400" : "text-neutral-500"}`}>
                     <span>{m.time}</span>
@@ -210,18 +303,73 @@ export default function ConversationsPanel() {
           </div>
 
           <div className="border-t border-neutral-800 p-3">
+            {/* Preview da imagem colada */}
+            {pastedImage && (
+              <div className="mb-2 flex flex-col items-start gap-2">
+                <div className="text-xs text-neutral-400">Imagem colada:</div>
+                <img src={pastedImage} alt="imagem colada" className="max-w-xs max-h-40 rounded-lg border border-neutral-700" />
+                <button className="rounded bg-neutral-800 px-3 py-1 text-sm" onClick={() => setPastedImage(null)}>Cancelar</button>
+              </div>
+            )}
             <div className="flex items-end gap-2">
               <div className="flex gap-1">
-                <button className="rounded-lg p-2 text-neutral-300 hover:bg-neutral-800" title="Anexar"><Paperclip className="h-5 w-5" /></button>
-                <button className="rounded-lg p-2 text-neutral-300 hover:bg-neutral-800" title="Imagem"><ImageIcon className="h-5 w-5" /></button>
-                <button className="rounded-lg p-2 text-neutral-300 hover:bg-neutral-800" title="Emoji"><Smile className="h-5 w-5" /></button>
+                <button className="rounded-lg p-2 text-neutral-300 hover:bg-neutral-800" title="Anexar" onClick={() => setShowFile("doc")}> <Paperclip className="h-5 w-5" /></button>
+                <button className="rounded-lg p-2 text-neutral-300 hover:bg-neutral-800" title="Imagem" onClick={() => setShowFile("img")}> <ImageIcon className="h-5 w-5" /></button>
+                <button className="rounded-lg p-2 text-neutral-300 hover:bg-neutral-800" title="Emoji" onClick={() => setShowEmoji(true)}> <Smile className="h-5 w-5" /></button>
               </div>
-              <textarea rows={1} placeholder="Escreva uma mensagem" className="min-h-[44px] flex-1 resize-none rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm outline-none placeholder:text-neutral-500 focus:border-neutral-700" />
-              <button className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-black shadow-sm hover:opacity-90" style={{ backgroundColor: AMBER }}>
+              <textarea
+                rows={1}
+                value={msg}
+                onChange={e => setMsg(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder="Escreva uma mensagem"
+                className="min-h-[44px] flex-1 resize-none rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm outline-none placeholder:text-neutral-500 focus:border-neutral-700"
+              />
+              <button
+                className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-black shadow-sm hover:opacity-90"
+                style={{ backgroundColor: AMBER }}
+                onClick={send}
+                disabled={!msg.trim()}
+              >
                 <Send className="h-4 w-4" /> Enviar
               </button>
             </div>
             <div className="mt-2 text-[11px] text-neutral-500">Dica: <b>Shift + Enter</b> quebra linha</div>
+            {/* Emoji Picker Modal */}
+            {showEmoji && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60" onClick={() => setShowEmoji(false)} />
+                <div className="relative rounded-xl bg-neutral-900 p-4 border border-neutral-700 shadow-xl">
+                  <div className="mb-2 text-sm font-semibold">Escolha um emoji</div>
+                  <div className="grid grid-cols-8 gap-2 text-2xl">
+                    {['😀','😁','😂','🤣','😍','😎','😇','🥳','😜','🤩','😢','😡','👍','🙏','👏','💡','🎉','🔥','❤️','💎','🌟','🍀','🍕','⚡'].map(e => (
+                      <button key={e} className="hover:bg-neutral-800 rounded p-1" onClick={() => handleEmoji(e)}>{e}</button>
+                    ))}
+                  </div>
+                  <button className="mt-4 rounded bg-neutral-800 px-3 py-1 text-sm" onClick={() => setShowEmoji(false)}>Fechar</button>
+                </div>
+              </div>
+            )}
+            {/* File Picker Modal */}
+            {showFile && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60" onClick={() => setShowFile(false)} />
+                <div className="relative rounded-xl bg-neutral-900 p-4 border border-neutral-700 shadow-xl">
+                  <div className="mb-2 text-sm font-semibold">{showFile === "img" ? "Enviar imagem" : "Enviar documento"}</div>
+                  <input type="file" accept={showFile === "img" ? "image/*" : undefined} onChange={handleFileChange} className="mb-3" />
+                  <button className="rounded bg-neutral-800 px-3 py-1 text-sm" onClick={() => setShowFile(false)}>Fechar</button>
+                </div>
+              </div>
+            )}
+            {/* Feedback do arquivo enviado */}
+            {fileName && (
+              <div className="mt-2 text-xs text-neutral-400">Arquivo enviado: <b>{fileName}</b></div>
+            )}
           </div>
 
           <div className="flex items-center justify-between border-t border-neutral-900 bg-neutral-950 px-4 py-2 text-[11px] text-neutral-500">
