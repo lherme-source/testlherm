@@ -73,6 +73,7 @@ export type Message = {
   text: string;
   time: string;
   status?: "none" | "delivered" | "seen";
+  image?: string;
 };
 
 const MESSAGES: Record<string, Message[]> = {
@@ -289,7 +290,7 @@ export default function ConversationsPanel() {
               <div key={m.id} className={`flex ${m.who === "me" ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[70%]">
                   {/* Se a mensagem tem imagem colada, exibe a imagem */}
-                  {('image' in m && m.image) ? (
+                  {typeof m.image === 'string' && m.image ? (
                     <img src={m.image} alt="imagem enviada" className="rounded-2xl max-w-xs max-h-40 mb-2 border border-neutral-700" />
                   ) : null}
                   <div className={`rounded-2xl px-4 py-3 text-sm ${m.who === "me" ? "text-black" : "text-neutral-200"}`} style={{ backgroundColor: m.who === "me" ? AMBER : "#1f1f1f" }}>{m.text}</div>
