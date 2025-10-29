@@ -41,10 +41,10 @@ const theme = {
   border: "#2a2a2a",
   text: "#f5f5f5",
   textMuted: "#9b9b9b",
-  accent: "#F5C241",
+  accent: "#D6A65C",
   success: "#34d399",
   danger: "#ef4444",
-  warn: "#F5C241",
+  warn: "#D6A65C",
 } as const;
 
 function FontGlobal() {
@@ -60,10 +60,10 @@ function FontGlobal() {
       :root { --accent: ${theme.accent}; }
       .tab { border-bottom: 2px solid transparent; }
       .tab-active { border-bottom-color: var(--accent); color: #fff; }
-      .btn-ghost:hover { background: #F5C2411a; }
+      .btn-ghost:hover { background: #D6A65C1a; }
       input:focus, textarea:focus, select:focus {
         border-color: var(--accent) !important;
-        box-shadow: 0 0 0 3px rgba(245, 194, 65, 0.15);
+        box-shadow: 0 0 0 3px rgba(214, 166, 92, 0.15);
       }
       .dot-accent { background: var(--accent); }
     `}</style>
