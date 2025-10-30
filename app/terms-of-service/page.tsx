@@ -3,14 +3,14 @@ export default function TermsOfServicePage() {
     <div className="min-h-screen bg-neutral-50 px-4 py-12">
       <article className="mx-auto max-w-4xl rounded-lg bg-white px-6 py-8 shadow-sm md:px-12 md:py-12">
         <h1 className="mb-2 text-3xl font-bold text-neutral-900 md:text-4xl">Terms of Service</h1>
-        <p className="mb-8 text-lg text-neutral-700">Welcome to messagefury.com!</p>
+        <p className="mb-8 text-lg text-neutral-700">Welcome to testlherm.vercel.app!</p>
 
         <div className="prose prose-neutral max-w-none">
           <p className="text-neutral-700 leading-relaxed">
-            These terms and conditions outline the rules and regulations for the use of Magnetic Mailer's Website, located at https://lhermtest.vercel.app
+            These terms and conditions outline the rules and regulations for the use of Magnetic Mailer's Website, located at https://testlherm.vercel.app
           </p>
           <p className="text-neutral-700 leading-relaxed">
-            By accessing this website we assume you accept these terms and conditions. Do not continue to use messagefury.com if you do not agree to take all of the terms and conditions stated on this page.
+            By accessing this website we assume you accept these terms and conditions. Do not continue to use testlherm.vercel.app if you do not agree to take all of the terms and conditions stated on this page.
           </p>
           <p className="text-neutral-700 leading-relaxed">
             The following terminology applies to these Terms and Conditions, Privacy Statement and Disclaimer Notice and all Agreements: "Client", "You" and "Your" refers to you, the person log on this website and compliant to the Company's terms and conditions. "The Company", "Ourselves", "We", "Our" and "Us", refers to our Company. "Party", "Parties", or "Us", refers to both the Client and ourselves. All terms refer to the offer, acceptance and consideration of payment necessary to undertake the process of our assistance to the Client in the most appropriate manner for the express purpose of meeting the Client's needs in respect of provision of the Company's stated services, in accordance with and subject to, prevailing law of in. Any use of the above terminology or other words in the singular, plural, capitalization and/or he/she or they, are taken as interchangeable and therefore as referring to same.
@@ -18,7 +18,7 @@ export default function TermsOfServicePage() {
 
           <h2 className="mt-8 mb-4 text-2xl font-semibold text-neutral-900">Cookies</h2>
           <p className="text-neutral-700 leading-relaxed">
-            We employ the use of cookies. By accessing messagefury.com, you agreed to use cookies in agreement with the Magnetic Mailer's Privacy Policy.
+            We employ the use of cookies. By accessing testlherm.vercel.app, you agreed to use cookies in agreement with the Magnetic Mailer's Privacy Policy.
           </p>
           <p className="text-neutral-700 leading-relaxed">
             Most interactive websites use cookies to let us retrieve the user's details for each visit. Cookies are used by our website to enable the functionality of certain areas to make it easier for people visiting our website. Some of our affiliate/advertising partners may also use cookies.
@@ -26,14 +26,14 @@ export default function TermsOfServicePage() {
 
           <h2 className="mt-8 mb-4 text-2xl font-semibold text-neutral-900">License</h2>
           <p className="text-neutral-700 leading-relaxed">
-            Unless otherwise stated, Magnetic Mailer and/or its licensors own the intellectual property rights for all material on messagefury.com. All intellectual property rights are reserved. You may access this from messagefury.com for your own personal use subjected to restrictions set in these terms and conditions.
+            Unless otherwise stated, Magnetic Mailer and/or its licensors own the intellectual property rights for all material on testlherm.vercel.app. All intellectual property rights are reserved. You may access this from testlherm.vercel.app for your own personal use subjected to restrictions set in these terms and conditions.
           </p>
           <p className="text-neutral-700 leading-relaxed">You must not:</p>
           <ul className="list-disc pl-6 space-y-2 text-neutral-700">
-            <li>Republish material from messagefury.com</li>
-            <li>Sell, rent or sub-license material from messagefury.com</li>
-            <li>Reproduce, duplicate or copy material from messagefury.com</li>
-            <li>Redistribute content from messagefury.com</li>
+            <li>Republish material from testlherm.vercel.app</li>
+            <li>Sell, rent or sub-license material from testlherm.vercel.app</li>
+            <li>Reproduce, duplicate or copy material from testlherm.vercel.app</li>
+            <li>Redistribute content from testlherm.vercel.app</li>
           </ul>
           <p className="text-neutral-700 leading-relaxed">
             This Agreement shall begin on the date hereof. Our Terms and Conditions were created with the help of the Free Terms and Conditions Generator.
