@@ -131,18 +131,18 @@ export default function ConversationsPanel() {
     }
   };
 
-  const active = useMemo(() => threads.find((t) => t.id === activeId)!, [threads, activeId]);
+  const active = useMemo(() => threads.find((t: Thread) => t.id === activeId)!, [threads, activeId]);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return threads;
     const q = query.toLowerCase();
-    return threads.filter((t) => [t.name, t.last, ...(t.tags || [])].join(" ").toLowerCase().includes(q));
+    return threads.filter((t: Thread) => [t.name, t.last, ...(t.tags || [])].join(" ").toLowerCase().includes(q));
   }, [query, threads]);
 
   const messages = useMemo<Message[]>(() => messagesMap[activeId] || [], [messagesMap, activeId]);
 
   useEffect(() => {
-    setThreads((prev) => prev.map((t) => (t.id === activeId ? { ...t, unread: 0 } : t)));
+    setThreads((prev: Thread[]) => prev.map((t: Thread) => (t.id === activeId ? { ...t, unread: 0 } : t)));
   }, [activeId]);
 
   // Envia mensagem ou imagem colada
@@ -151,7 +151,7 @@ export default function ConversationsPanel() {
       const newMsg: Message & { image?: string } = {
         id: `img_${Date.now()}`,
         who: "me",
-        text: "[imagem colada]",
+        text: "",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         status: "none",
         image: pastedImage,
@@ -160,8 +160,9 @@ export default function ConversationsPanel() {
         ...prev,
         [activeId]: [...(prev[activeId] || []), newMsg],
       }));
-      setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: "[imagem]", time: newMsg.time } : t));
+      setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: "🖼️ Imagem", time: newMsg.time } : t));
       setPastedImage(null);
+      setMsg("");
       return;
     }
     const text = msg.trim();
@@ -183,7 +184,7 @@ export default function ConversationsPanel() {
 
   // Handler para emoji picker
   const handleEmoji = (emoji: string) => {
-    setMsg(prev => prev + emoji);
+    setMsg((prev: string) => prev + emoji);
     setShowEmoji(false);
   };
 
@@ -192,20 +193,41 @@ export default function ConversationsPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
     setFileName(file.name);
+    const isImg = showFile === "img" && file.type.startsWith("image/");
     setShowFile(false);
-    // Opcional: adicionar mensagem de arquivo ao chat
-    const newMsg: Message = {
-      id: `file_${Date.now()}`,
-      who: "me",
-      text: `📎 ${file.name}`,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      status: "none",
-    };
-    setMessagesMap((prev) => ({
-      ...prev,
-      [activeId]: [...(prev[activeId] || []), newMsg],
-    }));
-    setThreads((prev) => prev.map((t) => t.id === activeId ? { ...t, last: newMsg.text, time: newMsg.time } : t));
+    if (isImg) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target?.result as string;
+        const newMsg: Message = {
+          id: `img_${Date.now()}`,
+          who: "me",
+          text: "",
+          image: dataUrl,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          status: "none",
+        };
+        setMessagesMap((prev: Record<string, Message[]>) => ({
+          ...prev,
+          [activeId]: [...(prev[activeId] || []), newMsg],
+        }));
+        setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: "🖼️ Imagem", time: newMsg.time } : t));
+      };
+      reader.readAsDataURL(file);
+    } else {
+      const newMsg: Message = {
+        id: `file_${Date.now()}`,
+        who: "me",
+        text: `📎 ${file.name}`,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        status: "none",
+      };
+      setMessagesMap((prev: Record<string, Message[]>) => ({
+        ...prev,
+        [activeId]: [...(prev[activeId] || []), newMsg],
+      }));
+      setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: newMsg.text, time: newMsg.time } : t));
+    }
   };
 
   return (
@@ -230,7 +252,7 @@ export default function ConversationsPanel() {
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-neutral-500" />
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
                 placeholder="Buscar contato ou telefone"
                 className="w-full rounded-xl border border-neutral-800 bg-neutral-900 py-2 pl-9 pr-3 text-sm outline-none placeholder:text-neutral-500 focus:border-neutral-700"
               />
@@ -238,7 +260,7 @@ export default function ConversationsPanel() {
           </div>
 
           <div className="scrollbar-thin flex-1 overflow-y-auto px-2 pb-3">
-            {filtered.map((t) => (
+            {filtered.map((t: Thread) => (
               <button
                 key={t.id}
                 onClick={() => setActiveId(t.id)}
@@ -286,14 +308,16 @@ export default function ConversationsPanel() {
           </div>
 
           <div className="flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-neutral-900 to-neutral-950 p-4">
-            {messages.map((m) => (
+            {messages.map((m: Message) => (
               <div key={m.id} className={`flex ${m.who === "me" ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[70%]">
                   {/* Se a mensagem tem imagem colada, exibe a imagem */}
                   {typeof m.image === 'string' && m.image ? (
                     <img src={m.image} alt="imagem enviada" className="rounded-2xl max-w-xs max-h-40 mb-2 border border-neutral-700" />
                   ) : null}
-                  <div className={`rounded-2xl px-4 py-3 text-sm ${m.who === "me" ? "text-black" : "text-neutral-200"}`} style={{ backgroundColor: m.who === "me" ? AMBER : "#1f1f1f" }}>{m.text}</div>
+                  {m.text.trim() !== "" && (
+                    <div className={`rounded-2xl px-4 py-3 text-sm ${m.who === "me" ? "text-black" : "text-neutral-200"}`} style={{ backgroundColor: m.who === "me" ? AMBER : "#1f1f1f" }}>{m.text}</div>
+                  )}
                   <div className={`mt-1 flex items-center gap-1 text-[10px] ${m.who === "me" ? "justify-end text-neutral-400" : "text-neutral-500"}`}>
                     <span>{m.time}</span>
                     {m.who === "me" && (m.status === "seen" ? <CheckCheck className="h-3 w-3" /> : m.status === "delivered" ? <Check className="h-3 w-3" /> : null)}
@@ -321,21 +345,22 @@ export default function ConversationsPanel() {
               <textarea
                 rows={1}
                 value={msg}
-                onChange={e => setMsg(e.target.value)}
-                onKeyDown={e => {
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setMsg(e.target.value)}
+                onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     send();
                   }
                 }}
-                placeholder="Escreva uma mensagem"
+                onPaste={handlePaste}
+                placeholder="Escreva uma mensagem ou cole uma imagem"
                 className="min-h-[44px] flex-1 resize-none rounded-xl border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm outline-none placeholder:text-neutral-500 focus:border-neutral-700"
               />
               <button
                 className="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-black shadow-sm hover:opacity-90"
                 style={{ backgroundColor: AMBER }}
                 onClick={send}
-                disabled={!msg.trim()}
+                disabled={!msg.trim() && !pastedImage}
               >
                 <Send className="h-4 w-4" /> Enviar
               </button>
