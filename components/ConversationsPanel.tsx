@@ -1,6 +1,6 @@
 "use client";
 // ConversationsPanel.tsx (WJ — Versão 1 / Aba Conversas)
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import {
   Search,
   Paperclip,
@@ -110,6 +110,8 @@ export default function ConversationsPanel() {
   const [showFile, setShowFile] = useState<"doc"|"img"|false>(false);
   const [fileName, setFileName] = useState<string>("");
   const [pastedImage, setPastedImage] = useState<string | null>(null); // base64 da imagem colada
+  const [lightbox, setLightbox] = useState<string | null>(null); // visualização ampliada de imagem
+  const messagesBoxRef = useRef<HTMLDivElement | null>(null);
 
   // Handler para colar imagem (printscreen)
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -140,6 +142,14 @@ export default function ConversationsPanel() {
   }, [query, threads]);
 
   const messages = useMemo<Message[]>(() => messagesMap[activeId] || [], [messagesMap, activeId]);
+
+  // Mantém a lista de mensagens rolada para o final ao trocar de conversa ou enviar/receber
+  useEffect(() => {
+    const el = messagesBoxRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [activeId, messages.length]);
 
   useEffect(() => {
     setThreads((prev: Thread[]) => prev.map((t: Thread) => (t.id === activeId ? { ...t, unread: 0 } : t)));
@@ -180,6 +190,24 @@ export default function ConversationsPanel() {
     }));
     setMsg("");
     setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: text, time: newMsg.time } : t));
+  };
+
+  // Simula uma imagem recebida (para testar preview de "them")
+  const simulateIncomingImage = () => {
+    const sampleUrl = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=1200&q=80&auto=format&fit=crop";
+    const newMsg: Message = {
+      id: `them_img_${Date.now()}`,
+      who: "them",
+      text: "",
+      image: sampleUrl,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      status: "none",
+    };
+    setMessagesMap((prev: Record<string, Message[]>) => ({
+      ...prev,
+      [activeId]: [...(prev[activeId] || []), newMsg],
+    }));
+    setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: "🖼️ Imagem", time: newMsg.time } : t));
   };
 
   // Handler para emoji picker
@@ -231,7 +259,7 @@ export default function ConversationsPanel() {
   };
 
   return (
-    <div className="h-full w-full overflow-hidden bg-neutral-900 text-neutral-100">
+    <div className="h-screen w-full overflow-hidden bg-neutral-900 text-neutral-100">
       <div className="flex h-14 items-center justify-between border-b border-neutral-800 px-4">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-full" style={{ backgroundColor: AMBER }} />
@@ -245,8 +273,8 @@ export default function ConversationsPanel() {
         </div>
       </div>
 
-      <div className="grid h-[calc(100%-56px)] grid-cols-[300px_1fr]">
-        <aside className="flex h-full flex-col border-r border-neutral-800">
+      <div className="grid h-[calc(100%-56px)] min-h-0 grid-cols-[300px_1fr]">
+        <aside className="flex h-full min-h-0 flex-col border-r border-neutral-800">
           <div className="flex items-center gap-2 p-3">
             <div className="relative w-full">
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-neutral-500" />
@@ -290,7 +318,7 @@ export default function ConversationsPanel() {
           </div>
         </aside>
 
-        <section className="flex h-full flex-col">
+  <section className="flex h-full min-h-0 flex-col">
           <div className="flex h-14 items-center justify-between border-b border-neutral-800 px-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-700 text-xs font-semibold">{active.initials}</div>
@@ -304,16 +332,17 @@ export default function ConversationsPanel() {
               <button className="rounded-lg p-2 hover:bg-neutral-800" title="Chamada de voz"><Phone className="h-4 w-4" /></button>
               <button className="rounded-lg p-2 hover:bg-neutral-800" title="Vídeo"><Video className="h-4 w-4" /></button>
               <button className="rounded-lg p-2 hover:bg-neutral-800" title="Mais"><EllipsisVertical className="h-4 w-4" /></button>
+              <button className="rounded-lg p-2 hover:bg-neutral-800" title="Testar imagem recebida" onClick={simulateIncomingImage}><ImageIcon className="h-4 w-4" /></button>
             </div>
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-neutral-900 to-neutral-950 p-4">
+          <div ref={messagesBoxRef} className="flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-neutral-900 to-neutral-950 p-4">
             {messages.map((m: Message) => (
               <div key={m.id} className={`flex ${m.who === "me" ? "justify-end" : "justify-start"}`}>
                 <div className="max-w-[70%]">
                   {/* Se a mensagem tem imagem colada, exibe a imagem */}
                   {typeof m.image === 'string' && m.image ? (
-                    <img src={m.image} alt="imagem enviada" className="rounded-2xl max-w-xs max-h-40 mb-2 border border-neutral-700" />
+                    <img src={m.image} alt="imagem enviada" onClick={() => setLightbox(m.image!)} className="rounded-2xl max-w-xs max-h-40 mb-2 border border-neutral-700 cursor-zoom-in" />
                   ) : null}
                   {m.text.trim() !== "" && (
                     <div className={`rounded-2xl px-4 py-3 text-sm ${m.who === "me" ? "text-black" : "text-neutral-200"}`} style={{ backgroundColor: m.who === "me" ? AMBER : "#1f1f1f" }}>{m.text}</div>
@@ -390,6 +419,13 @@ export default function ConversationsPanel() {
                   <input type="file" accept={showFile === "img" ? "image/*" : undefined} onChange={handleFileChange} className="mb-3" />
                   <button className="rounded bg-neutral-800 px-3 py-1 text-sm" onClick={() => setShowFile(false)}>Fechar</button>
                 </div>
+              </div>
+            )}
+            {/* Lightbox para visualizar imagem em tamanho maior */}
+            {lightbox && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setLightbox(null)}>
+                <div className="absolute inset-0 bg-black/80" />
+                <img src={lightbox} alt="visualização da imagem" className="relative max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl" />
               </div>
             )}
             {/* Feedback do arquivo enviado */}
