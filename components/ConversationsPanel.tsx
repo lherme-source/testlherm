@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Users,
   Clock,
+  ArrowLeft,
 } from "lucide-react";
 
 const AMBER = "#d6a65c"; // rgb(214,166,92)
@@ -112,6 +113,8 @@ export default function ConversationsPanel() {
   const [pastedImage, setPastedImage] = useState<string | null>(null); // base64 da imagem colada
   const [lightbox, setLightbox] = useState<string | null>(null); // visualização ampliada de imagem
   const messagesBoxRef = useRef<HTMLDivElement | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileMode, setMobileMode] = useState<"list"|"chat">("list");
 
   // Handler para colar imagem (printscreen)
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -150,6 +153,14 @@ export default function ConversationsPanel() {
       el.scrollTop = el.scrollHeight;
     }
   }, [activeId, messages.length]);
+
+  // Detecta viewport mobile (iPhone 15 Pro ~393px) e alterna layout
+  useEffect(() => {
+    const handler = () => setIsMobile(typeof window !== 'undefined' ? window.innerWidth <= 430 : false);
+    handler();
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   useEffect(() => {
     setThreads((prev: Thread[]) => prev.map((t: Thread) => (t.id === activeId ? { ...t, unread: 0 } : t)));
@@ -262,19 +273,41 @@ export default function ConversationsPanel() {
     <div className="h-screen w-full overflow-hidden bg-neutral-900 text-neutral-100">
       <div className="flex h-14 items-center justify-between border-b border-neutral-800 px-4">
         <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-full" style={{ backgroundColor: AMBER }} />
-          <div className="text-sm font-semibold">Luminárias WJ</div>
-          <span className="ml-2 rounded bg-neutral-800 px-2 py-0.5 text-[10px]">WHATSAPP CLOUD · PROTÓTIPO</span>
+          {/* Desktop header */}
+          <div className="hidden items-center gap-2 md:flex">
+            <div className="h-7 w-7 rounded-full" style={{ backgroundColor: AMBER }} />
+            <div className="text-sm font-semibold">Luminárias WJ</div>
+            <span className="ml-2 rounded bg-neutral-800 px-2 py-0.5 text-[10px]">WHATSAPP CLOUD · PROTÓTIPO</span>
+          </div>
+          {/* Mobile header */}
+          <div className="flex items-center gap-2 md:hidden">
+            {mobileMode === "chat" ? (
+              <>
+                <button className="rounded-lg p-1 hover:bg-neutral-800" onClick={() => setMobileMode("list")} aria-label="Voltar">
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-700 text-[10px] font-semibold">{active.initials}</div>
+                  <div>
+                    <div className="text-sm font-semibold leading-tight">{active.name}</div>
+                    <div className="-mt-0.5 text-[10px] text-neutral-400">online agora</div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm font-semibold">Conversas</div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-3 text-neutral-400">
+        <div className="hidden items-center gap-3 text-neutral-400 md:flex">
           <MessageSquare size={18} />
           <Users size={18} />
           <Clock size={18} />
         </div>
       </div>
 
-      <div className="grid h-[calc(100%-56px)] min-h-0 grid-cols-[300px_1fr]">
-        <aside className="flex h-full min-h-0 flex-col border-r border-neutral-800">
+      <div className="grid h-[calc(100%-56px)] min-h-0 grid-cols-1 md:grid-cols-[300px_1fr]">
+        <aside className={`h-full min-h-0 flex-col border-r border-neutral-800 ${isMobile ? (mobileMode === 'list' ? 'flex' : 'hidden') : 'flex'}`}>
           <div className="flex items-center gap-2 p-3">
             <div className="relative w-full">
               <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-neutral-500" />
@@ -291,7 +324,7 @@ export default function ConversationsPanel() {
             {filtered.map((t: Thread) => (
               <button
                 key={t.id}
-                onClick={() => setActiveId(t.id)}
+                onClick={() => { setActiveId(t.id); if (isMobile) setMobileMode('chat'); }}
                 className={`group mb-1 flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors hover:bg-neutral-800 ${t.id === activeId ? "bg-neutral-800" : ""}`}
               >
                 <div className="relative">
@@ -318,7 +351,7 @@ export default function ConversationsPanel() {
           </div>
         </aside>
 
-  <section className="flex h-full min-h-0 flex-col">
+  <section className={`h-full min-h-0 flex-col ${isMobile ? (mobileMode === 'chat' ? 'flex' : 'hidden') : 'flex'}`}>
           <div className="flex h-14 items-center justify-between border-b border-neutral-800 px-4">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-700 text-xs font-semibold">{active.initials}</div>
