@@ -106,6 +106,7 @@ export default function ConversationsPanel() {
   const [threads, setThreads] = useState<Thread[]>(initialThreads);
   const [activeId, setActiveId] = useState<string>("1");
   const [msg, setMsg] = useState("");
+  const [toPhone, setToPhone] = useState<string>("+55 11 99999-0000"); // telefone destino (E.164)
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(MESSAGES);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showFile, setShowFile] = useState<"doc"|"img"|false>(false);
@@ -115,6 +116,11 @@ export default function ConversationsPanel() {
   const messagesBoxRef = useRef<HTMLDivElement | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMode, setMobileMode] = useState<"list"|"chat">("list");
+  const [apiConnected, setApiConnected] = useState<boolean>(false);
+  const [sending, setSending] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [showTemplates, setShowTemplates] = useState<boolean>(false);
+  const [templates, setTemplates] = useState<Array<{ name: string; language?: string; status?: string; category?: string }>>([]);
 
   // Handler para colar imagem (printscreen)
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -162,12 +168,26 @@ export default function ConversationsPanel() {
     return () => window.removeEventListener('resize', handler);
   }, []);
 
+  // Detecta conexão com nossa API (tentando listar templates)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/templates', { cache: 'no-store' });
+        setApiConnected(res.ok);
+      } catch {
+        setApiConnected(false);
+      }
+    })();
+  }, []);
+
   useEffect(() => {
     setThreads((prev: Thread[]) => prev.map((t: Thread) => (t.id === activeId ? { ...t, unread: 0 } : t)));
   }, [activeId]);
 
   // Envia mensagem ou imagem colada
-  const send = () => {
+  const normalizeE164 = (s: string) => s.replace(/[^\d+]/g, '');
+
+  const send = async () => {
     if (pastedImage) {
       const newMsg: Message & { image?: string } = {
         id: `img_${Date.now()}`,
@@ -184,6 +204,7 @@ export default function ConversationsPanel() {
       setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: "🖼️ Imagem", time: newMsg.time } : t));
       setPastedImage(null);
       setMsg("");
+      // Observação: envio real de imagem precisa de URL pública. Use o botão de imagem por link (em breve).
       return;
     }
     const text = msg.trim();
@@ -201,6 +222,29 @@ export default function ConversationsPanel() {
     }));
     setMsg("");
     setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: text, time: newMsg.time } : t));
+
+    // Disparo real pela API (se disponível)
+    try {
+      setSending(true);
+      setErrorMsg("");
+      const to = normalizeE164(toPhone);
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'text', to, text: { body: text } })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Falha ao enviar');
+      // Marca como entregue visualmente
+      setMessagesMap((prev: Record<string, Message[]>) => ({
+        ...prev,
+        [activeId]: (prev[activeId] || []).map((m: Message) => m.id === newMsg.id ? { ...m, status: 'delivered' } : m)
+      }));
+    } catch (e:any) {
+      setErrorMsg(e?.message || 'Erro ao enviar');
+    } finally {
+      setSending(false);
+    }
   };
 
   // Simula uma imagem recebida (para testar preview de "them")
@@ -266,6 +310,48 @@ export default function ConversationsPanel() {
         [activeId]: [...(prev[activeId] || []), newMsg],
       }));
       setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: newMsg.text, time: newMsg.time } : t));
+    }
+  };
+
+  // Abrir modal de templates e carregar lista
+  const openTemplates = async () => {
+    setShowTemplates(true);
+    try {
+      const res = await fetch('/api/templates', { cache: 'no-store' });
+      const data = await res.json();
+      const items = (data?.data || data?.templates || data)?.map((t: any) => ({
+        name: t.name,
+        language: t.language?.code || t.language || 'pt_BR',
+        status: t.status,
+        category: t.category
+      })) || [];
+      setTemplates(items);
+    } catch {
+      setTemplates([]);
+    }
+  };
+
+  const sendTemplate = async (name: string, language = 'pt_BR') => {
+    try {
+      setSending(true);
+      setErrorMsg("");
+      const to = normalizeE164(toPhone);
+      const res = await fetch('/api/send-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, template: name, lang: language, components: [] })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Falha ao enviar template');
+      // Feedback visual no chat
+      const visual: Message = { id: `tpl_${Date.now()}`, who: 'me', text: `Template enviado: ${name}`, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), status: 'delivered' };
+  setMessagesMap((prev: Record<string, Message[]>) => ({ ...prev, [activeId]: [...(prev[activeId]||[]), visual] }));
+  setThreads((prev: Thread[]) => prev.map((t: Thread) => t.id === activeId ? { ...t, last: visual.text, time: visual.time } : t));
+      setShowTemplates(false);
+    } catch (e:any) {
+      setErrorMsg(e?.message || 'Erro ao enviar template');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -361,7 +447,7 @@ export default function ConversationsPanel() {
               </div>
             </div>
             <div className="flex items-center gap-2 text-neutral-300">
-              <button className="rounded-lg p-2 hover:bg-neutral-800" title="Templates"><FileText className="h-4 w-4" /></button>
+              <button className="rounded-lg p-2 hover:bg-neutral-800" title="Templates" onClick={openTemplates}><FileText className="h-4 w-4" /></button>
               <button className="rounded-lg p-2 hover:bg-neutral-800" title="Chamada de voz"><Phone className="h-4 w-4" /></button>
               <button className="rounded-lg p-2 hover:bg-neutral-800" title="Vídeo"><Video className="h-4 w-4" /></button>
               <button className="rounded-lg p-2 hover:bg-neutral-800" title="Mais"><EllipsisVertical className="h-4 w-4" /></button>
@@ -390,6 +476,18 @@ export default function ConversationsPanel() {
           </div>
 
           <div className="border-t border-neutral-800 p-3">
+            {/* Linha de configuração rápida: telefone destino e status de envio */}
+            <div className="mb-2 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-400">Telefone destino (E.164):</span>
+                <input value={toPhone} onChange={(e)=>setToPhone(e.target.value)} className="w-48 rounded border border-neutral-800 bg-neutral-900 px-2 py-1 text-sm outline-none focus:border-neutral-700" placeholder="+5511999999999" />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-neutral-400">
+                <span className={`inline-block h-2 w-2 rounded-full ${apiConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+                {apiConnected ? 'API conectada' : 'API indisponível'} {sending ? '· enviando…' : ''}
+                {errorMsg && <span className="ml-2 rounded bg-red-900/40 px-2 py-0.5 text-red-300">{errorMsg}</span>}
+              </div>
+            </div>
             {/* Preview da imagem colada */}
             {pastedImage && (
               <div className="mb-2 flex flex-col items-start gap-2">
@@ -454,6 +552,32 @@ export default function ConversationsPanel() {
                 </div>
               </div>
             )}
+            {/* Modal de Templates */}
+            {showTemplates && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/60" onClick={() => setShowTemplates(false)} />
+                <div className="relative max-h-[80vh] w-[520px] overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2">
+                    <div className="text-sm font-semibold">Enviar template</div>
+                    <button className="rounded p-1 hover:bg-neutral-800" onClick={()=>setShowTemplates(false)}>Fechar</button>
+                  </div>
+                  <div className="max-h-[60vh] overflow-y-auto p-3 text-sm">
+                    {templates.length === 0 && <div className="text-neutral-400">Nenhum template encontrado.</div>}
+                    <ul className="space-y-2">
+                      {templates.map((t)=> (
+                        <li key={`${t.name}:${t.language}`} className="flex items-center justify-between rounded-lg border border-neutral-800 px-3 py-2">
+                          <div>
+                            <div className="font-medium">{t.name}</div>
+                            <div className="text-xs text-neutral-400">{t.language || 'pt_BR'} · {t.status || '—'} · {t.category || '—'}</div>
+                          </div>
+                          <button className="rounded bg-neutral-800 px-3 py-1 text-sm hover:bg-neutral-700" onClick={()=>sendTemplate(t.name, t.language || 'pt_BR')}>Enviar</button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Lightbox para visualizar imagem em tamanho maior */}
             {lightbox && (
               <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setLightbox(null)}>
@@ -468,7 +592,7 @@ export default function ConversationsPanel() {
           </div>
 
           <div className="flex items-center justify-between border-t border-neutral-900 bg-neutral-950 px-4 py-2 text-[11px] text-neutral-500">
-            <div>Protótipo UI · sem conexão API</div>
+            <div>UI conectada à API · WhatsApp Cloud</div>
             <div><span className="mr-2">Admin WJ</span><span className="rounded bg-neutral-900 px-2 py-0.5">Luminárias WJ · +55 11 99999-0000</span></div>
           </div>
         </section>
