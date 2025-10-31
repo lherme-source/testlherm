@@ -208,6 +208,8 @@ function TemplatesPage() {
     "Olá {{1}}, obrigado pelo interesse nas Luminárias WJ. Podemos ajudar com medidas, prazos e acabamentos. Digite seu assunto ou responda 1-Catálogo 2-Prazos 3-Atendimento."
   );
   const [footer, setFooter] = useState<string>("WJ · Feito à mão no Brasil");
+  const [loadingList, setLoadingList] = useState(false);
+  const [tplList, setTplList] = useState<Array<{ name: string; language?: string; category?: string; status?: string }>>([]);
 
   const wrapSel = (setter: (v: string) => void, value: string, left: string, right: string) => setter(left + value + right);
 
@@ -224,12 +226,32 @@ function TemplatesPage() {
 
   const errors = validate();
 
+  const loadMetaTemplates = async () => {
+    try {
+      setLoadingList(true);
+      const res = await fetch('/api/templates', { cache: 'no-store' });
+      const data = await res.json();
+      const items = (data?.data || data?.templates || data)?.map((t: any) => ({
+        name: t.name,
+        language: t.language?.code || t.language || 'pt_BR',
+        status: t.status,
+        category: t.category
+      })) || [];
+      setTplList(items);
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
       <div className="border-b px-4 py-3" style={{ borderColor: theme.border, background: theme.panel }}>
-        <div className="flex items-center gap-2">
-          <Sparkles size={16} />
-          <div className="text-sm font-medium">Templates para aprovação (Meta)</div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} />
+            <div className="text-sm font-medium">Templates</div>
+          </div>
+          <button onClick={loadMetaTemplates} className="btn-ghost rounded-md px-3 py-1.5 text-xs">{loadingList ? 'Carregando…' : 'Carregar da Meta'}</button>
         </div>
       </div>
 
@@ -662,12 +684,14 @@ function AccountsPage({
   setSelectedAccountId,
   selectedPhoneId,
   setSelectedPhoneId,
+  isLive,
 }: {
   accounts: MetaAccount[];
   selectedAccountId: string;
   setSelectedAccountId: (v: string) => void;
   selectedPhoneId: string;
   setSelectedPhoneId: (v: string) => void;
+  isLive: boolean;
 }) {
   const account = accounts.find((a) => a.id === selectedAccountId);
   return (
@@ -682,7 +706,7 @@ function AccountsPage({
       <div className="grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-2">
         <div className="space-y-3 rounded-lg border p-3" style={{ borderColor: theme.border }}>
           <div className="mb-1 text-xs uppercase tracking-wider" style={{ color: theme.textMuted }}>
-            Contas disponíveis (simulado)
+            {isLive ? 'Conta conectada (live)' : 'Contas disponíveis (simulado)'}
           </div>
           <div className="space-y-2">
             <select value={selectedAccountId} onChange={(e) => { setSelectedAccountId(e.target.value); setSelectedPhoneId(""); }} className="w-full rounded-md border bg-transparent px-3 py-2 text-sm outline-none" style={{ borderColor: theme.border }}>
@@ -692,9 +716,11 @@ function AccountsPage({
                 </option>
               ))}
             </select>
-            <p className="text-[11px] opacity-60">
-              No real: listar via Graph API <code>/&#123;WABA_ID&#125;/phone_numbers</code> com permissões adequadas.
-            </p>
+            {!isLive && (
+              <p className="text[11px] opacity-60">
+                No real: listar via Graph API <code>/&#123;WABA_ID&#125;/phone_numbers</code> com permissões adequadas.
+              </p>
+            )}
           </div>
         </div>
 
@@ -1266,12 +1292,32 @@ export default function ChatPrototypeWJ() {
   const [openNewContact, setOpenNewContact] = useState(false);
   const [activeTab, setActiveTab] = useState<"dashboard" | "chat" | "contacts" | "templates" | "broadcast" | "accounts">("dashboard");
 
-  const [accounts] = useState<MetaAccount[]>(MOCK_ACCOUNTS);
+  const [accounts, setAccounts] = useState<MetaAccount[]>(MOCK_ACCOUNTS);
   const [selectedAccountId, setSelectedAccountId] = useState<string>(MOCK_ACCOUNTS[0].id);
   const [selectedPhoneId, setSelectedPhoneId] = useState<string>(MOCK_ACCOUNTS[0].phones[0].id);
 
   const selectedAccount = useMemo(() => accounts.find((a) => a.id === selectedAccountId), [accounts, selectedAccountId]);
   const selectedPhone = useMemo(() => selectedAccount?.phones.find((p) => p.id === selectedPhoneId), [selectedAccount, selectedPhoneId]);
+
+  // Fetch real account/phones from API if available
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/account', { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok || !data?.wabaId) return;
+        const liveAcc: MetaAccount = {
+          id: 'acc_live',
+          name: data.name || 'Meta WhatsApp Account',
+          wabaId: data.wabaId,
+          phones: (data.phones || []).map((p: any) => ({ id: p.id, display: p.display || p.id, status: p.status || '—' })),
+        };
+        setAccounts([liveAcc]);
+        setSelectedAccountId('acc_live');
+        if (liveAcc.phones[0]) setSelectedPhoneId(liveAcc.phones[0].id);
+      } catch {}
+    })();
+  }, []);
 
   const selectedContact = useMemo(() => contacts.find((c) => c.id === selected) || contacts[0], [contacts, selected]);
 
@@ -1459,7 +1505,7 @@ export default function ChatPrototypeWJ() {
 
         {activeTab === "accounts" && (
           <div className="flex w-full flex-1 flex-col">
-            <AccountsPage accounts={accounts} selectedAccountId={selectedAccountId} setSelectedAccountId={setSelectedAccountId} selectedPhoneId={selectedPhoneId} setSelectedPhoneId={setSelectedPhoneId} />
+            <AccountsPage accounts={accounts} selectedAccountId={selectedAccountId} setSelectedAccountId={setSelectedAccountId} selectedPhoneId={selectedPhoneId} setSelectedPhoneId={setSelectedPhoneId} isLive={accounts.length === 1 && accounts[0].id === 'acc_live'} />
           </div>
         )}
       </div>
