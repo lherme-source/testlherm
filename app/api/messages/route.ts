@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Ensure Node.js runtime
+export const runtime = 'nodejs';
+
 type SendText = { type: 'text'; to: string; text: { body: string } };
 type SendImage = { type: 'image'; to: string; image: { link: string; caption?: string } };
 type SendDocument = { type: 'document'; to: string; document: { link: string; caption?: string; filename?: string } };

@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 
+// Ensure Node.js runtime (needed for 'crypto' module)
+export const runtime = 'nodejs';
+
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const mode = url.searchParams.get("hub.mode");
   const token = url.searchParams.get("hub.verify_token");
   const challenge = url.searchParams.get("hub.challenge");
+  // Health check (user opening the URL without query params)
+  if (!mode && !token && !challenge) {
+    return NextResponse.json({ ok: true, service: 'whatsapp-webhook', message: 'Endpoint online. Configure Meta verification to complete setup.' }, { status: 200 });
+  }
   if (mode === "subscribe" && token === process.env.VERIFY_TOKEN) return new NextResponse(challenge || "", { status: 200 });
   return new NextResponse("Forbidden", { status: 403 });
 }
@@ -37,6 +44,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Quickly acknowledge to avoid timeouts per Meta's requirements
+    // Optional: log basic info for debugging (do not log secrets)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[WEBHOOK] entries:', Array.isArray(body?.entry) ? body.entry.length : 0);
+    }
     // Optionally, you can enqueue processing here (e.g., Queue/Background task)
     return NextResponse.json({ ok: true, entryCount: Array.isArray(body?.entry) ? body.entry.length : 0 }, { status: 200 });
   } catch (e: any) {

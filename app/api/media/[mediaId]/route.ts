@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 
+export const runtime = 'nodejs';
+
 export async function GET(_req: NextRequest, { params }: { params: { mediaId: string } }) {
   const SIM = process.env.SIMULATION_MODE === 'true';
   const token = process.env.WHATSAPP_TOKEN;
