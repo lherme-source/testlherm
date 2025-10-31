@@ -771,13 +771,32 @@ function BroadcastPage({
   selectedPhone?: MetaPhone;
   onCreateCampaign: (c: { name: string; templateName: string; total: number; scheduleAt?: string }) => void;
 }) {
-  const approvedTemplates = useMemo(
-    () => [
-      { id: "tpl_boasvindas", name: "boas_vindas_wj", header: "Luminárias WJ", body: "Olá {{1}}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?", footer: "Feito à mão no Brasil" },
-      { id: "tpl_aviso2026", name: "aviso_pedidos_2026", header: "Agenda 2026", body: "Olá {{1}}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?", footer: "Equipe WJ" },
-    ],
-    []
-  );
+  const [approvedTemplates, setApprovedTemplates] = useState<any[]>([
+    { id: "tpl_boasvindas", name: "boas_vindas_wj", header: "Luminárias WJ", body: "Olá {{1}}, obrigado por falar com a WJ. Posso enviar o catálogo atualizado?", footer: "Feito à mão no Brasil" },
+    { id: "tpl_aviso2026", name: "aviso_pedidos_2026", header: "Agenda 2026", body: "Olá {{1}}, os pedidos para 2026 já estão abertos. Quer garantir prioridade na produção?", footer: "Equipe WJ" },
+  ]);
+
+  // Load approved templates from Meta on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/templates', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const tpls = (data.templates || []).filter((t: any) => t.status === 'APPROVED');
+        if (tpls.length) {
+          const mapped = tpls.map((t: any, idx: number) => ({
+            id: `tpl_${t.name}_${idx}`,
+            name: t.name,
+            header: t.components?.find((c: any) => c.type === 'HEADER')?.text || '',
+            body: t.components?.find((c: any) => c.type === 'BODY')?.text || '',
+            footer: t.components?.find((c: any) => c.type === 'FOOTER')?.text || ''
+          }));
+          setApprovedTemplates(mapped);
+        }
+      } catch {}
+    })();
+  }, []);
 
   const [selectedTplId, setSelectedTplId] = useState<string>("");
   const selectedTpl = approvedTemplates.find((t) => t.id === selectedTplId);
@@ -1144,9 +1163,31 @@ function CampaignCard({ c }: { c: Campaign }) {
 }
 
 function DashboardPage({ campaigns, filter, setFilter }: { campaigns: Campaign[]; filter: CampaignStatus | "Todos"; setFilter: (f: CampaignStatus | "Todos") => void }) {
+  const [stats, setStats] = useState<any>(null);
+  
+  // Load real statistics from webhook events
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/stats', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data.stats);
+        }
+      } catch {}
+    })();
+  }, []);
+
   const list = campaigns.filter((c) => (filter === "Todos" ? true : c.status === filter));
 
-  const totals = campaigns.reduce(
+  // Use real stats if available, otherwise fallback to campaign totals
+  const totals = stats ? {
+    total: stats.total || 0,
+    sent: stats.sent || 0,
+    delivered: stats.delivered || 0,
+    failed: stats.failed || 0,
+    replied: stats.replied || 0
+  } : campaigns.reduce(
     (acc, c) => {
       acc.total += c.total;
       acc.sent += c.sent;
@@ -1158,7 +1199,7 @@ function DashboardPage({ campaigns, filter, setFilter }: { campaigns: Campaign[]
     { total: 0, sent: 0, delivered: 0, failed: 0, replied: 0 }
   );
 
-  const overallProgress = safeRate(totals.sent, totals.total);
+  const overallProgress = safeRate(totals.delivered, totals.sent);
 
   return (
     <div className="flex h-full flex-col">
@@ -1167,6 +1208,7 @@ function DashboardPage({ campaigns, filter, setFilter }: { campaigns: Campaign[]
           <div className="flex items-center gap-2">
             <BarChart3 size={16} />
             <div className="text-sm font-medium">Dashboard de Campanhas</div>
+            {stats && <span className="ml-2 rounded bg-green-900/30 px-2 py-0.5 text-[10px] text-green-400">Dados reais · Webhooks</span>}
           </div>
           <div className="flex items-center gap-2 text-xs">
             <button className={`rounded-md px-2 py-1 ${filter === "Todos" ? "tab-active" : "opacity-70 hover:opacity-100"} tab`} onClick={() => setFilter("Todos")}>
@@ -1187,8 +1229,8 @@ function DashboardPage({ campaigns, filter, setFilter }: { campaigns: Campaign[]
 
       <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-4">
         <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
-          <div className="text-xs opacity-60">Total destinatários</div>
-          <div className="text-xl font-semibold">{totals.total}</div>
+          <div className="text-xs opacity-60">Total enviados</div>
+          <div className="text-xl font-semibold">{totals.sent}</div>
         </div>
         <div className="rounded-lg border p-3" style={{ borderColor: theme.border }}>
           <div className="text-xs opacity-60">Entregues</div>

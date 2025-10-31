@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { addWebhookEvent } from "@/lib/webhookStore";
 
 // Ensure Node.js runtime (needed for 'crypto' module)
 export const runtime = 'nodejs';
@@ -44,6 +45,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Quickly acknowledge to avoid timeouts per Meta's requirements
+    // Store event for later retrieval
+    addWebhookEvent({ timestamp: Date.now(), body });
+    
     // Optional: log basic info for debugging (do not log secrets)
     if (process.env.NODE_ENV !== 'production') {
       console.log('[WEBHOOK] entries:', Array.isArray(body?.entry) ? body.entry.length : 0);

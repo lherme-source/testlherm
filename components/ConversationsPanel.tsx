@@ -108,6 +108,46 @@ export default function ConversationsPanel() {
   const [msg, setMsg] = useState("");
   const [toPhone, setToPhone] = useState<string>("+55 11 99999-0000"); // telefone destino (E.164)
   const [messagesMap, setMessagesMap] = useState<Record<string, Message[]>>(MESSAGES);
+
+  // Load real conversations from webhook API
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/conversations', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const convs = data?.conversations || [];
+        if (!convs.length) return;
+        
+        const mapped: Thread[] = convs.map((c: any) => ({
+          id: c.id,
+          name: c.name || c.phone,
+          initials: (c.name || c.phone).substring(0, 2).toUpperCase(),
+          last: c.messages[c.messages.length - 1]?.text || '...',
+          time: new Date(c.lastMessageTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          unread: c.unread || 0,
+          pinned: false,
+          tags: []
+        }));
+        
+        const msgMap: Record<string, Message[]> = {};
+        for (const c of convs) {
+          msgMap[c.id] = (c.messages || []).map((m: any) => ({
+            id: m.id,
+            who: m.from,
+            text: m.text,
+            time: new Date(m.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            status: m.status || 'none',
+            image: m.mediaId ? `/api/media/${m.mediaId}` : undefined
+          }));
+        }
+        
+        setThreads(mapped);
+        setMessagesMap(msgMap);
+        if (mapped[0]) setActiveId(mapped[0].id);
+      } catch {}
+    })();
+  }, []);
   const [showEmoji, setShowEmoji] = useState(false);
   const [showFile, setShowFile] = useState<"doc"|"img"|false>(false);
   const [fileName, setFileName] = useState<string>("");
